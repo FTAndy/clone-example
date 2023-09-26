@@ -1,97 +1,116 @@
-const Nightmare = require('nightmare')
-const fs = require('fs');
-const path = require('path')
+import puppeteer, {Browser} from 'puppeteer';
+import fs from 'fs'
+import path from 'path'
+import { 
+  getRandom1to5,
+  exists 
+} from './utils'
 const getBilibiliVideoEmbedUrl = require('./getBilibiliVideoEmbedUrl')
 const getSpecialDetail = require('./getSpecialDetail')
 // list: https://www.imdb.com/list/ls003453197/
 
-const comedianCrawler = Nightmare({ 
-  show: true,
-  waitTimeout: 60 * 1000,
-  // openDevTools: {
-  //   mode: 'detach'
-  // },
-})
-
-function getRandom1to5 () {
-  return Math.floor(Math.random() * 100 / 20) + 1
+interface Props {
+  imdbURL: string,
+  browser: Browser
 }
 
+async function getSpecials(props: Props) {
+  const { imdbURL, browser } = props
 
-// TODO: get cover image from netflix: https://www.netflix.com/sg/title/81625055
-async function start({
-  imdbURL
-}: {
-  imdbURL: string
-}) {
-  await comedianCrawler
-    .useragent('chrome')
-    // .useragent('firefox')
-    .goto(imdbURL)
+  const profilePage = await browser.newPage();
 
-  await comedianCrawler.wait('[data-testid="hero__pageTitle"] span')
+  await profilePage.goto(imdbURL)
 
-  const comedianName = await comedianCrawler.evaluate(() => {
-    return document.querySelector('[data-testid="hero__pageTitle"] span').innerText
-  })
+  await profilePage.waitForSelector('[data-testid="hero__pageTitle"] span')
+
+  const comedianName = await profilePage.evaluate(() => {
+    return document.querySelector('[data-testid="hero__pageTitle"] span')?.innerHTML
+  }) || ''
 
   let flag = true
 
   while (flag) {
-    const isThereATag = await comedianCrawler.exists('.ipc-chip--active')
+    const isThereATag = await exists(profilePage, '.ipc-chip--active')
     if (isThereATag) {
-      await comedianCrawler.click('.ipc-chip--active')
-      await comedianCrawler.wait(1000 * getRandom1to5())
+      await profilePage.click('.ipc-chip--active')
+      await profilePage.waitForTimeout(1000 * getRandom1to5())
     } else {
       flag = false
     }
   }
 
-  await comedianCrawler.click('#name-filmography-filter-writer')
+  await profilePage.click('#name-filmography-filter-writer')
 
   setTimeout(async () => {
-    const errorExist = await comedianCrawler.exists('[data-testid="retry-error"]')
+    const errorExist = await exists(profilePage, '[data-testid="retry-error"]')
     if (errorExist) {
-      await comedianCrawler.click('[data-testid="retry"]')
+      await profilePage.click('[data-testid="retry"]')
     }
   }, 5000)
 
-  await comedianCrawler.wait('.filmo-section-writer')
+  await profilePage.waitForSelector('.filmo-section-writer')
 
-  const allSpecials = await comedianCrawler.evaluate(() => {
-    return {
-      href: document.querySelector('.ipc-metadata-list-summary-item__t').href,
-      name: document.querySelector('.ipc-metadata-list-summary-item__t').innerText
+  const allSpecials = await profilePage.evaluate(() => {
+    let specialElements = document.querySelectorAll('.ipc-metadata-list-summary-item__t')
+    if (specialElements) {
+      const specialElementsArray = Array.from(specialElements)
+      return specialElementsArray.map(e => {
+        return {
+          href: (e as HTMLAnchorElement)?.href,
+          name: (e as HTMLAnchorElement)?.innerText
+        }
+      })
     }
   })
-
-  // const specialInfo = await comedianCrawler.evaluate(() => {
-  //   return {
-  //     href: document.querySelector('.ipc-metadata-list-summary-item__t').href,
-  //     name: document.querySelector('.ipc-metadata-list-summary-item__t').innerText
-  //   }
-  // })
-
-  const {
-    name: specialName,
-    href: specialUrl
-  } = specialInfo
-
-  const bilibiliEmbedUrl = await getBilibiliVideoEmbedUrl(specialName, comedianName)
-
-  const specialDetail = await getSpecialDetail(specialUrl)
-
-  await comedianCrawler.end()
-
+  
   return {
-    name: comedianName,
-    specialDetail,
-    bilibiliEmbedUrl,
-    imdbURL
+    allSpecials,
+    comedianName
   }
 }
 
-async function getOneSpecialInfo({ specialName, specialUrl }) {
+
+// TODO: get cover image from netflix: https://www.netflix.com/sg/title/81625055
+async function startCrawlWithProfile(props: Props) {
+  const { imdbURL, browser } = props
+
+  const { allSpecials, comedianName } = await getSpecials({
+    imdbURL,
+    browser
+  })
+  if (allSpecials) {
+
+    const crawelTasks = allSpecials.map((s) => {
+      return new Promise(async (resolve) => {
+
+        const {
+          bilibiliEmbedUrl, 
+          specialDetail
+        } = await getOneSpecialInfo({
+          specialName: s.name,
+          specialUrl: s.href,
+          comedianName
+        })
+
+        resolve({
+          bilibiliEmbedUrl,
+          specialDetail
+        })
+      })
+    })
+
+    const specialDetails = await Promise.all(crawelTasks)
+  
+    return {
+      name: comedianName,
+      specialDetails,
+    }
+  }
+}
+
+async function getOneSpecialInfo({ specialName, specialUrl, comedianName } : {
+  specialName: string, specialUrl: string, comedianName: string
+}) {
   try {
     const [bilibiliEmbedUrl, specialDetail] = await Promise.all([getBilibiliVideoEmbedUrl(specialName, comedianName), getSpecialDetail(specialUrl)]) 
     return {
@@ -100,12 +119,22 @@ async function getOneSpecialInfo({ specialName, specialUrl }) {
     }
   } catch (error) {
     console.log('error getOneSpecialInfo', error)
+    return {
+      bilibiliEmbedUrl: '', 
+      specialDetail: ''
+    }
   }
 }
 
 async function main(imdbURL = 'https://www.imdb.com/name/nm0152638/?ref_=nmls_hd') {
-  const infos = await start({
-    imdbURL
+  
+  const browser = await puppeteer.launch({
+    product: 'chrome'
+  });
+
+  const infos = await startCrawlWithProfile({
+    imdbURL,
+    browser
   })
   fs.writeFile(path.resolve(__dirname, 'settings.json'), JSON.stringify(infos), function(error) {
     if (error) {
