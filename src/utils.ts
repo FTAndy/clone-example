@@ -5,7 +5,8 @@ export function getRandom1to5 () {
 }
 
 export async function exists(page: Page, elementName: string) {
-  return page.evaluate(() => {
-    return document.querySelector(elementName)
-  })
+  return page.evaluate((name) => {
+    console.log('name', name)
+    return document.querySelector(name)?.innerHTML
+  }, elementName)
 }

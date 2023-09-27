@@ -1,52 +1,64 @@
-const Nightmare = require('nightmare')
+import puppeteer from 'puppeteer';
 
-module.exports = async function getBilibiliVideoEmbedUrl(specialName, comedianName) {
-  const bilibiliCrawler = Nightmare({ 
-    show: true,
-    waitTimeout: 30 * 1000,
-    // openDevTools: {
-    //   mode: 'detach'
-    // },
+declare global {
+  interface Window {
+    __INITIAL_STATE__: {
+      cidMap: any
+    };
+  }
+}
+module.exports = async function getBilibiliVideoEmbedUrl(specialName: string, comedianName: string) {
+  const browser = await puppeteer.launch({
+    product: 'chrome',
+    headless: false
+  });
+
+  const profilePage = await browser.newPage();
+
+  await profilePage
+    .goto('https://search.bilibili.com/')
+
+  await profilePage.waitForSelector('#search-keyword')
+
+  await profilePage.type('#search-keyword', `${specialName} ${comedianName}`)
+  
+  await profilePage.click('.searchBtn')
+
+  await profilePage.waitForSelector('.video-list')
+
+  const videoUrl = await profilePage.evaluate(() => {
+    const element = document.querySelector('.video-list div a[href]')
+    return (element as HTMLAnchorElement)?.href || null
   })
 
-  const videoUrl = await bilibiliCrawler
-    .useragent('chrome')
-    .goto('https://search.bilibili.com/')
-    .wait('#search-keyword')
-    .type('#search-keyword', `${specialName} ${comedianName}`)
-    .click('.searchBtn')
-    .wait('.video-list')
-    .evaluate(() => {
-      return document.querySelector('.video-list div a[href]').href
-    })
+  if (videoUrl) {
+    await profilePage.goto(videoUrl)
 
-  const videoInfo = await bilibiliCrawler
-    .goto(videoUrl)
-    .wait('#share-btn-iframe')
-    .evaluate(() => {
-      const state = window.__INITIAL_STATE__
-      const {cidMap} = state
-      const keys = Object.keys(cidMap)
-      const key = keys[0]
-      const videoInfo = cidMap[key]
-      const { aid, bvid } = videoInfo
-      const cid = key
-      return {
-        cid,
-        aid,
-        bvid
-      }
-    })
+    await profilePage.waitForSelector('#share-btn-iframe')
+    
+    const videoInfo = await profilePage.evaluate(() => {
+        const state = window.__INITIAL_STATE__
+        const {cidMap} = state
+        const keys = Object.keys(cidMap)
+        const key = keys[0]
+        const videoInfo = cidMap[key]
+        const { aid, bvid } = videoInfo
+        const cid = key
+        return {
+          cid,
+          aid,
+          bvid
+        }
+      })
 
-  const { aid, bvid, cid } = videoInfo
-  
-  const iframeUrl = `//player.bilibili.com/player.html?aid=${aid}&bvid=${bvid}&cid=${cid}&high_quality=1&autoplay=false`
+    const { aid, bvid, cid } = videoInfo
+    
+    const iframeUrl = `//player.bilibili.com/player.html?aid=${aid}&bvid=${bvid}&cid=${cid}&high_quality=1&autoplay=false`
 
-  console.log(videoInfo, 'videoInfo', iframeUrl)
+    console.log(videoInfo, 'videoInfo', iframeUrl)
 
-  // await bilibiliCrawler.wait(5000000)  
+    // await profilePage.wait(5000000)  
 
-  await bilibiliCrawler.end()
-
-  return iframeUrl
+    return iframeUrl
+  }
 }

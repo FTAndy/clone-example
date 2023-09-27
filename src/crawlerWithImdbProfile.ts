@@ -1,21 +1,20 @@
-import puppeteer, {Browser} from 'puppeteer';
 import fs from 'fs'
 import path from 'path'
 import { 
   getRandom1to5,
   exists 
 } from './utils'
+import { initBrowser, browser } from './initBrowser'
 const getBilibiliVideoEmbedUrl = require('./getBilibiliVideoEmbedUrl')
 const getSpecialDetail = require('./getSpecialDetail')
 // list: https://www.imdb.com/list/ls003453197/
 
 interface Props {
   imdbURL: string,
-  browser: Browser
 }
 
 async function getSpecials(props: Props) {
-  const { imdbURL, browser } = props
+  const { imdbURL } = props
 
   const profilePage = await browser.newPage();
 
@@ -29,8 +28,11 @@ async function getSpecials(props: Props) {
 
   let flag = true
 
+  console.log(comedianName, 'comedianName')
+
   while (flag) {
     const isThereATag = await exists(profilePage, '.ipc-chip--active')
+    console.log(isThereATag, 'isThereATag')
     if (isThereATag) {
       await profilePage.click('.ipc-chip--active')
       await profilePage.waitForTimeout(1000 * getRandom1to5())
@@ -72,40 +74,44 @@ async function getSpecials(props: Props) {
 
 // TODO: get cover image from netflix: https://www.netflix.com/sg/title/81625055
 async function startCrawlWithProfile(props: Props) {
-  const { imdbURL, browser } = props
+  const { imdbURL } = props
 
   const { allSpecials, comedianName } = await getSpecials({
     imdbURL,
-    browser
   })
-  if (allSpecials) {
 
-    const crawelTasks = allSpecials.map((s) => {
-      return new Promise(async (resolve) => {
+  console.log(allSpecials, comedianName)
 
-        const {
-          bilibiliEmbedUrl, 
-          specialDetail
-        } = await getOneSpecialInfo({
-          specialName: s.name,
-          specialUrl: s.href,
-          comedianName
-        })
+  // if (allSpecials) {
 
-        resolve({
-          bilibiliEmbedUrl,
-          specialDetail
-        })
-      })
-    })
+  //   const crawelTasks = allSpecials
+  //   .slice(0, 1)
+  //   .map((s) => {
+  //     return new Promise(async (resolve) => {
 
-    const specialDetails = await Promise.all(crawelTasks)
+  //       const {
+  //         bilibiliEmbedUrl, 
+  //         specialDetail
+  //       } = await getOneSpecialInfo({
+  //         specialName: s.name,
+  //         specialUrl: s.href,
+  //         comedianName
+  //       })
+
+  //       resolve({
+  //         bilibiliEmbedUrl,
+  //         specialDetail
+  //       })
+  //     })
+  //   })
+
+  //   const specialDetails = await Promise.all(crawelTasks)
   
-    return {
-      name: comedianName,
-      specialDetails,
-    }
-  }
+  //   return {
+  //     name: comedianName,
+  //     specialDetails,
+  //   }
+  // }
 }
 
 async function getOneSpecialInfo({ specialName, specialUrl, comedianName } : {
@@ -126,23 +132,17 @@ async function getOneSpecialInfo({ specialName, specialUrl, comedianName } : {
   }
 }
 
-async function main(imdbURL = 'https://www.imdb.com/name/nm0152638/?ref_=nmls_hd') {
+export default async function main(imdbURL = 'https://www.imdb.com/name/nm0152638/?ref_=nmls_hd') {
   
-  const browser = await puppeteer.launch({
-    product: 'chrome'
-  });
+  await initBrowser()
 
   const infos = await startCrawlWithProfile({
     imdbURL,
-    browser
   })
   fs.writeFile(path.resolve(__dirname, 'settings.json'), JSON.stringify(infos), function(error) {
     if (error) {
       console.log(error)
     }
   })
+  // await browser.close();
 }
-
-main()
-
-export {};
