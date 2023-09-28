@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer';
+import { browser } from './initBrowser'
 
 declare global {
   interface Window {
@@ -7,36 +7,32 @@ declare global {
     };
   }
 }
-module.exports = async function getBilibiliVideoEmbedUrl(specialName: string, comedianName: string) {
-  const browser = await puppeteer.launch({
-    product: 'chrome',
-    headless: false
-  });
 
-  const profilePage = await browser.newPage();
+export async function getBilibiliVideoEmbedUrl(specialName: string, comedianName: string) {
+  const bilibiliPage = await browser.newPage();
 
-  await profilePage
+  await bilibiliPage
     .goto('https://search.bilibili.com/')
 
-  await profilePage.waitForSelector('#search-keyword')
+  await bilibiliPage.waitForSelector('.search-input-el')
 
-  await profilePage.type('#search-keyword', `${specialName} ${comedianName}`)
+  await bilibiliPage.type('.search-input-el', `${specialName} ${comedianName}`)
   
-  await profilePage.click('.searchBtn')
+  await bilibiliPage.click('.search-button')
 
-  await profilePage.waitForSelector('.video-list')
+  await bilibiliPage.waitForSelector('.video-list div a[href]')
 
-  const videoUrl = await profilePage.evaluate(() => {
+  const videoUrl = await bilibiliPage.evaluate(() => {
     const element = document.querySelector('.video-list div a[href]')
-    return (element as HTMLAnchorElement)?.href || null
+    return (element as HTMLAnchorElement)?.href
   })
 
   if (videoUrl) {
-    await profilePage.goto(videoUrl)
+    await bilibiliPage.goto(videoUrl)
 
-    await profilePage.waitForSelector('#share-btn-iframe')
+    await bilibiliPage.waitForSelector('#share-btn-iframe')
     
-    const videoInfo = await profilePage.evaluate(() => {
+    const videoInfo = await bilibiliPage.evaluate(() => {
         const state = window.__INITIAL_STATE__
         const {cidMap} = state
         const keys = Object.keys(cidMap)
@@ -56,8 +52,6 @@ module.exports = async function getBilibiliVideoEmbedUrl(specialName: string, co
     const iframeUrl = `//player.bilibili.com/player.html?aid=${aid}&bvid=${bvid}&cid=${cid}&high_quality=1&autoplay=false`
 
     console.log(videoInfo, 'videoInfo', iframeUrl)
-
-    // await profilePage.wait(5000000)  
 
     return iframeUrl
   }

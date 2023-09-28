@@ -43,8 +43,8 @@ var fs_1 = __importDefault(require("fs"));
 var path_1 = __importDefault(require("path"));
 var utils_1 = require("./utils");
 var initBrowser_1 = require("./initBrowser");
-var getBilibiliVideoEmbedUrl = require('./getBilibiliVideoEmbedUrl');
-var getSpecialDetail = require('./getSpecialDetail');
+var getBilibiliVideoEmbedUrl_1 = require("./getBilibiliVideoEmbedUrl");
+var getSpecialDetail_1 = require("./getSpecialDetail");
 function getSpecials(props) {
     return __awaiter(this, void 0, void 0, function () {
         var imdbURL, profilePage, comedianName, flag, isThereATag, allSpecials;
@@ -136,7 +136,8 @@ function getSpecials(props) {
 // TODO: get cover image from netflix: https://www.netflix.com/sg/title/81625055
 function startCrawlWithProfile(props) {
     return __awaiter(this, void 0, void 0, function () {
-        var imdbURL, _a, allSpecials, comedianName;
+        var imdbURL, _a, allSpecials, comedianName, crawelTasks, specialDetails;
+        var _this = this;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -147,7 +148,38 @@ function startCrawlWithProfile(props) {
                 case 1:
                     _a = _b.sent(), allSpecials = _a.allSpecials, comedianName = _a.comedianName;
                     console.log(allSpecials, comedianName);
-                    return [2 /*return*/];
+                    if (!allSpecials) return [3 /*break*/, 3];
+                    crawelTasks = allSpecials
+                        .slice(0, 1)
+                        .map(function (s) {
+                        return new Promise(function (resolve) { return __awaiter(_this, void 0, void 0, function () {
+                            var _a, bilibiliEmbedUrl, specialDetail;
+                            return __generator(this, function (_b) {
+                                switch (_b.label) {
+                                    case 0: return [4 /*yield*/, getOneSpecialInfo({
+                                            specialName: s.name,
+                                            specialUrl: s.href,
+                                            comedianName: comedianName
+                                        })];
+                                    case 1:
+                                        _a = _b.sent(), bilibiliEmbedUrl = _a.bilibiliEmbedUrl, specialDetail = _a.specialDetail;
+                                        resolve({
+                                            bilibiliEmbedUrl: bilibiliEmbedUrl,
+                                            specialDetail: specialDetail
+                                        });
+                                        return [2 /*return*/];
+                                }
+                            });
+                        }); });
+                    });
+                    return [4 /*yield*/, Promise.all(crawelTasks)];
+                case 2:
+                    specialDetails = _b.sent();
+                    return [2 /*return*/, {
+                            name: comedianName,
+                            specialDetails: specialDetails,
+                        }];
+                case 3: return [2 /*return*/];
             }
         });
     });
@@ -160,7 +192,10 @@ function getOneSpecialInfo(_a) {
             switch (_c.label) {
                 case 0:
                     _c.trys.push([0, 2, , 3]);
-                    return [4 /*yield*/, Promise.all([getBilibiliVideoEmbedUrl(specialName, comedianName), getSpecialDetail(specialUrl)])];
+                    return [4 /*yield*/, Promise.all([
+                            (0, getBilibiliVideoEmbedUrl_1.getBilibiliVideoEmbedUrl)(specialName, comedianName),
+                            (0, getSpecialDetail_1.getSpecialDetail)(specialUrl)
+                        ])];
                 case 1:
                     _b = _c.sent(), bilibiliEmbedUrl = _b[0], specialDetail = _b[1];
                     return [2 /*return*/, {
@@ -198,6 +233,9 @@ function main(imdbURL) {
                             console.log(error);
                         }
                     });
+                    return [4 /*yield*/, initBrowser_1.browser.close()];
+                case 3:
+                    _a.sent();
                     return [2 /*return*/];
             }
         });

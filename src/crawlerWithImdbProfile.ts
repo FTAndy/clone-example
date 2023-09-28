@@ -5,8 +5,8 @@ import {
   exists 
 } from './utils'
 import { initBrowser, browser } from './initBrowser'
-const getBilibiliVideoEmbedUrl = require('./getBilibiliVideoEmbedUrl')
-const getSpecialDetail = require('./getSpecialDetail')
+import {getBilibiliVideoEmbedUrl} from './getBilibiliVideoEmbedUrl'
+import {getSpecialDetail} from './getSpecialDetail'
 // list: https://www.imdb.com/list/ls003453197/
 
 interface Props {
@@ -82,43 +82,50 @@ async function startCrawlWithProfile(props: Props) {
 
   console.log(allSpecials, comedianName)
 
-  // if (allSpecials) {
+  if (allSpecials) {
 
-  //   const crawelTasks = allSpecials
-  //   .slice(0, 1)
-  //   .map((s) => {
-  //     return new Promise(async (resolve) => {
+    const crawelTasks = allSpecials
+    .slice(0, 1)
+    .map((s) => {
+      return new Promise(async (resolve) => {
+        const {
+          bilibiliEmbedUrl, 
+          specialDetail
+        } = await getOneSpecialInfo({
+          specialName: s.name,
+          specialUrl: s.href,
+          comedianName
+        })
 
-  //       const {
-  //         bilibiliEmbedUrl, 
-  //         specialDetail
-  //       } = await getOneSpecialInfo({
-  //         specialName: s.name,
-  //         specialUrl: s.href,
-  //         comedianName
-  //       })
+        resolve({
+          bilibiliEmbedUrl,
+          specialDetail
+        })
+      })
+    })
 
-  //       resolve({
-  //         bilibiliEmbedUrl,
-  //         specialDetail
-  //       })
-  //     })
-  //   })
-
-  //   const specialDetails = await Promise.all(crawelTasks)
+    const specialDetails = await Promise.all(crawelTasks)
   
-  //   return {
-  //     name: comedianName,
-  //     specialDetails,
-  //   }
-  // }
+    return {
+      name: comedianName,
+      specialDetails,
+    }
+  }
 }
 
 async function getOneSpecialInfo({ specialName, specialUrl, comedianName } : {
   specialName: string, specialUrl: string, comedianName: string
 }) {
   try {
-    const [bilibiliEmbedUrl, specialDetail] = await Promise.all([getBilibiliVideoEmbedUrl(specialName, comedianName), getSpecialDetail(specialUrl)]) 
+    const [
+      bilibiliEmbedUrl, 
+      specialDetail
+    ] = await Promise.all(
+      [
+        getBilibiliVideoEmbedUrl(specialName, comedianName), 
+        getSpecialDetail(specialUrl)
+      ]
+    ) 
     return {
       bilibiliEmbedUrl, 
       specialDetail
@@ -144,5 +151,5 @@ export default async function main(imdbURL = 'https://www.imdb.com/name/nm015263
       console.log(error)
     }
   })
-  // await browser.close();
+  await browser.close();
 }

@@ -35,55 +35,47 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-var puppeteer_1 = __importDefault(require("puppeteer"));
-module.exports = function getBilibiliVideoEmbedUrl(specialName, comedianName) {
+exports.getBilibiliVideoEmbedUrl = void 0;
+var initBrowser_1 = require("./initBrowser");
+function getBilibiliVideoEmbedUrl(specialName, comedianName) {
     return __awaiter(this, void 0, void 0, function () {
-        var browser, profilePage, videoUrl, videoInfo, aid, bvid, cid, iframeUrl;
+        var bilibiliPage, videoUrl, videoInfo, aid, bvid, cid, iframeUrl;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, puppeteer_1.default.launch({
-                        product: 'chrome',
-                        headless: false
-                    })];
+                case 0: return [4 /*yield*/, initBrowser_1.browser.newPage()];
                 case 1:
-                    browser = _a.sent();
-                    return [4 /*yield*/, browser.newPage()];
-                case 2:
-                    profilePage = _a.sent();
-                    return [4 /*yield*/, profilePage
+                    bilibiliPage = _a.sent();
+                    return [4 /*yield*/, bilibiliPage
                             .goto('https://search.bilibili.com/')];
+                case 2:
+                    _a.sent();
+                    return [4 /*yield*/, bilibiliPage.waitForSelector('.search-input-el')];
                 case 3:
                     _a.sent();
-                    return [4 /*yield*/, profilePage.waitForSelector('#search-keyword')];
+                    return [4 /*yield*/, bilibiliPage.type('.search-input-el', "".concat(specialName, " ").concat(comedianName))];
                 case 4:
                     _a.sent();
-                    return [4 /*yield*/, profilePage.type('#search-keyword', "".concat(specialName, " ").concat(comedianName))];
+                    return [4 /*yield*/, bilibiliPage.click('.search-button')];
                 case 5:
                     _a.sent();
-                    return [4 /*yield*/, profilePage.click('.searchBtn')];
+                    return [4 /*yield*/, bilibiliPage.waitForSelector('.video-list div a[href]')];
                 case 6:
                     _a.sent();
-                    return [4 /*yield*/, profilePage.waitForSelector('.video-list')];
-                case 7:
-                    _a.sent();
-                    return [4 /*yield*/, profilePage.evaluate(function () {
+                    return [4 /*yield*/, bilibiliPage.evaluate(function () {
                             var element = document.querySelector('.video-list div a[href]');
-                            return (element === null || element === void 0 ? void 0 : element.href) || null;
+                            return element === null || element === void 0 ? void 0 : element.href;
                         })];
-                case 8:
+                case 7:
                     videoUrl = _a.sent();
-                    if (!videoUrl) return [3 /*break*/, 12];
-                    return [4 /*yield*/, profilePage.goto(videoUrl)];
+                    if (!videoUrl) return [3 /*break*/, 11];
+                    return [4 /*yield*/, bilibiliPage.goto(videoUrl)];
+                case 8:
+                    _a.sent();
+                    return [4 /*yield*/, bilibiliPage.waitForSelector('#share-btn-iframe')];
                 case 9:
                     _a.sent();
-                    return [4 /*yield*/, profilePage.waitForSelector('#share-btn-iframe')];
-                case 10:
-                    _a.sent();
-                    return [4 /*yield*/, profilePage.evaluate(function () {
+                    return [4 /*yield*/, bilibiliPage.evaluate(function () {
                             var state = window.__INITIAL_STATE__;
                             var cidMap = state.cidMap;
                             var keys = Object.keys(cidMap);
@@ -97,15 +89,15 @@ module.exports = function getBilibiliVideoEmbedUrl(specialName, comedianName) {
                                 bvid: bvid
                             };
                         })];
-                case 11:
+                case 10:
                     videoInfo = _a.sent();
                     aid = videoInfo.aid, bvid = videoInfo.bvid, cid = videoInfo.cid;
                     iframeUrl = "//player.bilibili.com/player.html?aid=".concat(aid, "&bvid=").concat(bvid, "&cid=").concat(cid, "&high_quality=1&autoplay=false");
                     console.log(videoInfo, 'videoInfo', iframeUrl);
-                    // await profilePage.wait(5000000)  
                     return [2 /*return*/, iframeUrl];
-                case 12: return [2 /*return*/];
+                case 11: return [2 /*return*/];
             }
         });
     });
-};
+}
+exports.getBilibiliVideoEmbedUrl = getBilibiliVideoEmbedUrl;
