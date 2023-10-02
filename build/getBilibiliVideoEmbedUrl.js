@@ -47,16 +47,23 @@ function getBilibiliVideoEmbedUrl(specialName, comedianName) {
                 case 1:
                     bilibiliPage = _a.sent();
                     return [4 /*yield*/, bilibiliPage
-                            .goto('https://search.bilibili.com/')];
+                            .goto('https://search.bilibili.com/')
+                        // await bilibiliPage.waitForTimeout(getRandom(10) * 1000)
+                    ];
                 case 2:
                     _a.sent();
+                    // await bilibiliPage.waitForTimeout(getRandom(10) * 1000)
                     return [4 /*yield*/, bilibiliPage.waitForSelector('.search-input-el')];
                 case 3:
+                    // await bilibiliPage.waitForTimeout(getRandom(10) * 1000)
                     _a.sent();
                     return [4 /*yield*/, bilibiliPage.type('.search-input-el', "".concat(specialName, " ").concat(comedianName))];
                 case 4:
                     _a.sent();
-                    return [4 /*yield*/, bilibiliPage.click('.search-button')];
+                    return [4 /*yield*/, bilibiliPage.evaluate(function () {
+                            var button = document.querySelector('.search-button');
+                            button && button.click();
+                        })];
                 case 5:
                     _a.sent();
                     return [4 /*yield*/, bilibiliPage.waitForSelector('.video-list div a[href]')];
@@ -93,7 +100,6 @@ function getBilibiliVideoEmbedUrl(specialName, comedianName) {
                     videoInfo = _a.sent();
                     aid = videoInfo.aid, bvid = videoInfo.bvid, cid = videoInfo.cid;
                     iframeUrl = "//player.bilibili.com/player.html?aid=".concat(aid, "&bvid=").concat(bvid, "&cid=").concat(cid, "&high_quality=1&autoplay=false");
-                    console.log(videoInfo, 'videoInfo', iframeUrl);
                     return [2 /*return*/, iframeUrl];
                 case 11: return [2 /*return*/];
             }

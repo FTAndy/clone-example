@@ -48,7 +48,7 @@ function initBrowser() {
                 case 0: return [4 /*yield*/, puppeteer_1.default.launch({
                         product: 'chrome',
                         headless: false,
-                        devtools: true
+                        // devtools: true
                     })];
                 case 1:
                     exports.browser = _a.sent();

@@ -69,19 +69,17 @@ function getSpecials(props) {
                 case 4:
                     comedianName = (_a.sent()) || '';
                     flag = true;
-                    console.log(comedianName, 'comedianName');
                     _a.label = 5;
                 case 5:
                     if (!flag) return [3 /*break*/, 11];
                     return [4 /*yield*/, (0, utils_1.exists)(profilePage, '.ipc-chip--active')];
                 case 6:
                     isThereATag = _a.sent();
-                    console.log(isThereATag, 'isThereATag');
                     if (!isThereATag) return [3 /*break*/, 9];
                     return [4 /*yield*/, profilePage.click('.ipc-chip--active')];
                 case 7:
                     _a.sent();
-                    return [4 /*yield*/, profilePage.waitForTimeout(1000 * (0, utils_1.getRandom1to5)())];
+                    return [4 /*yield*/, profilePage.waitForTimeout(1000 * (0, utils_1.getRandom)())];
                 case 8:
                     _a.sent();
                     return [3 /*break*/, 10];
@@ -112,10 +110,14 @@ function getSpecials(props) {
                 case 13:
                     _a.sent();
                     return [4 /*yield*/, profilePage.evaluate(function () {
-                            var specialElements = document.querySelectorAll('.ipc-metadata-list-summary-item__t');
+                            var specialElements = document.querySelectorAll('.ipc-metadata-list-summary-item__tc');
                             if (specialElements) {
                                 var specialElementsArray = Array.from(specialElements);
-                                return specialElementsArray.map(function (e) {
+                                return specialElementsArray
+                                    .filter(function (e) { return (e === null || e === void 0 ? void 0 : e.innerHTML.includes('Special')) || (e === null || e === void 0 ? void 0 : e.innerHTML.includes('Video')); })
+                                    .slice(0, 1)
+                                    .map(function (e) { return e === null || e === void 0 ? void 0 : e.querySelector('.ipc-metadata-list-summary-item__t'); })
+                                    .map(function (e) {
                                     return {
                                         href: e === null || e === void 0 ? void 0 : e.href,
                                         name: e === null || e === void 0 ? void 0 : e.innerText
@@ -147,10 +149,9 @@ function startCrawlWithProfile(props) {
                         })];
                 case 1:
                     _a = _b.sent(), allSpecials = _a.allSpecials, comedianName = _a.comedianName;
-                    console.log(allSpecials, comedianName);
                     if (!allSpecials) return [3 /*break*/, 3];
                     crawelTasks = allSpecials
-                        .slice(0, 1)
+                        // .slice(0, 2)
                         .map(function (s) {
                         return new Promise(function (resolve) { return __awaiter(_this, void 0, void 0, function () {
                             var _a, bilibiliEmbedUrl, specialDetail;
@@ -228,10 +229,11 @@ function main(imdbURL) {
                         })];
                 case 2:
                     infos = _a.sent();
-                    fs_1.default.writeFile(path_1.default.resolve(__dirname, 'settings.json'), JSON.stringify(infos), function (error) {
+                    fs_1.default.writeFile(path_1.default.resolve(__dirname, "".concat(infos === null || infos === void 0 ? void 0 : infos.name, ".json")), JSON.stringify(infos), function (error) {
                         if (error) {
                             console.log(error);
                         }
+                        console.log('write file done');
                     });
                     return [4 /*yield*/, initBrowser_1.browser.close()];
                 case 3:

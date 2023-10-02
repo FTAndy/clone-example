@@ -1,4 +1,5 @@
 import { browser } from './initBrowser'
+import { getRandom } from './utils'
 
 declare global {
   interface Window {
@@ -14,11 +15,16 @@ export async function getBilibiliVideoEmbedUrl(specialName: string, comedianName
   await bilibiliPage
     .goto('https://search.bilibili.com/')
 
+  // await bilibiliPage.waitForTimeout(getRandom(10) * 1000)
+
   await bilibiliPage.waitForSelector('.search-input-el')
 
   await bilibiliPage.type('.search-input-el', `${specialName} ${comedianName}`)
-  
-  await bilibiliPage.click('.search-button')
+
+  await bilibiliPage.evaluate(() => {
+    const button = document.querySelector('.search-button')
+    button && (button as HTMLAnchorElement).click()
+  })
 
   await bilibiliPage.waitForSelector('.video-list div a[href]')
 
@@ -50,8 +56,6 @@ export async function getBilibiliVideoEmbedUrl(specialName: string, comedianName
     const { aid, bvid, cid } = videoInfo
     
     const iframeUrl = `//player.bilibili.com/player.html?aid=${aid}&bvid=${bvid}&cid=${cid}&high_quality=1&autoplay=false`
-
-    console.log(videoInfo, 'videoInfo', iframeUrl)
 
     return iframeUrl
   }

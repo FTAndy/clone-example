@@ -40,17 +40,27 @@ exports.getSpecialDetail = void 0;
 var initBrowser_1 = require("./initBrowser");
 function getSpecialDetail(specialUrl) {
     return __awaiter(this, void 0, void 0, function () {
-        var specialPage, datetime, netflixURL, runtimeDuration, tags, rating;
+        var specialPage, datetime, netflixURL, runtimeDuration, coverImgURL, tags, rating, e_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, initBrowser_1.browser.newPage()];
+                case 0:
+                    _a.trys.push([0, 10, , 11]);
+                    return [4 /*yield*/, initBrowser_1.browser.newPage()];
                 case 1:
                     specialPage = _a.sent();
-                    return [4 /*yield*/, specialPage.goto(specialUrl)];
+                    return [4 /*yield*/, specialPage.goto(specialUrl)
+                        // console.log('goto ', specialUrl)
+                    ];
                 case 2:
                     _a.sent();
-                    return [4 /*yield*/, specialPage.waitForSelector('[data-testid="hero__pageTitle"]')];
+                    // console.log('goto ', specialUrl)
+                    return [4 /*yield*/, specialPage.waitForSelector('[data-testid="hero__pageTitle"]', {
+                            timeout: 5000
+                        })
+                        // console.log('get title ', specialUrl)
+                    ];
                 case 3:
+                    // console.log('goto ', specialUrl)
                     _a.sent();
                     return [4 /*yield*/, specialPage.evaluate(function () {
                             var _a;
@@ -61,7 +71,7 @@ function getSpecialDetail(specialUrl) {
                     return [4 /*yield*/, specialPage.evaluate(function () {
                             // const platform = document.querySelector('[data-testid="details-officialsites"] .ipc-inline-list__item a').innerText
                             var element = document.querySelector('[data-testid="details-officialsites"] .ipc-inline-list__item a');
-                            return element.href;
+                            return element === null || element === void 0 ? void 0 : element.href;
                         })];
                 case 5:
                     netflixURL = _a.sent();
@@ -72,24 +82,44 @@ function getSpecialDetail(specialUrl) {
                 case 6:
                     runtimeDuration = _a.sent();
                     return [4 /*yield*/, specialPage.evaluate(function () {
-                            return Array.from(document.querySelectorAll('[data-testid="genres"] .ipc-chip')).map(function (node) { return node.innerText; });
+                            var element = document.querySelector('.ipc-image');
+                            var imgURLs = element === null || element === void 0 ? void 0 : element.srcset.split(', ');
+                            if ((imgURLs === null || imgURLs === void 0 ? void 0 : imgURLs.length) > 0) {
+                                var urlString = imgURLs[imgURLs.length - 1];
+                                var highResolutionUrl = /(.+) (?:.+w)/.exec(urlString);
+                                return (highResolutionUrl === null || highResolutionUrl === void 0 ? void 0 : highResolutionUrl[1]) || '';
+                            }
+                            return element === null || element === void 0 ? void 0 : element.srcset.split(', ');
                         })];
                 case 7:
+                    coverImgURL = _a.sent();
+                    return [4 /*yield*/, specialPage.evaluate(function () {
+                            return Array.from(document.querySelectorAll('[data-testid="genres"] .ipc-chip')).map(function (node) { return node.innerText; });
+                        })];
+                case 8:
                     tags = _a.sent();
                     return [4 /*yield*/, specialPage.evaluate(function () {
                             var _a;
                             return (_a = document.querySelector('[data-testid="hero-rating-bar__aggregate-rating__score"] span')) === null || _a === void 0 ? void 0 : _a.innerHTML;
-                        })];
-                case 8:
+                        })
+                        // console.log(datetime, netflixURL, runtimeDuration, tags, rating, 'special info')
+                    ];
+                case 9:
                     rating = _a.sent();
-                    console.log(datetime, netflixURL, runtimeDuration, tags, rating, 'special info');
+                    // console.log(datetime, netflixURL, runtimeDuration, tags, rating, 'special info')
                     return [2 /*return*/, {
                             datetime: datetime,
                             netflixURL: netflixURL,
                             runtimeDuration: runtimeDuration,
                             tags: tags,
-                            rating: rating
+                            rating: rating,
+                            coverImgURL: coverImgURL
                         }];
+                case 10:
+                    e_1 = _a.sent();
+                    console.log(e_1, 'specialUrl', specialUrl);
+                    return [2 /*return*/, {}];
+                case 11: return [2 /*return*/];
             }
         });
     });

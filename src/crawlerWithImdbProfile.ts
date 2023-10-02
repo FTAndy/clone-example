@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { 
-  getRandom1to5,
+  getRandom,
   exists 
 } from './utils'
 import { initBrowser, browser } from './initBrowser'
@@ -28,14 +28,11 @@ async function getSpecials(props: Props) {
 
   let flag = true
 
-  console.log(comedianName, 'comedianName')
-
   while (flag) {
     const isThereATag = await exists(profilePage, '.ipc-chip--active')
-    console.log(isThereATag, 'isThereATag')
     if (isThereATag) {
       await profilePage.click('.ipc-chip--active')
-      await profilePage.waitForTimeout(1000 * getRandom1to5())
+      await profilePage.waitForTimeout(1000 * getRandom())
     } else {
       flag = false
     }
@@ -53,10 +50,13 @@ async function getSpecials(props: Props) {
   await profilePage.waitForSelector('.filmo-section-writer')
 
   const allSpecials = await profilePage.evaluate(() => {
-    let specialElements = document.querySelectorAll('.ipc-metadata-list-summary-item__t')
+    let specialElements = document.querySelectorAll('.ipc-metadata-list-summary-item__tc')
     if (specialElements) {
       const specialElementsArray = Array.from(specialElements)
-      return specialElementsArray.map(e => {
+      return specialElementsArray
+      .filter(e => e?.innerHTML.includes('Special') || e?.innerHTML.includes('Video'))
+      .map(e => e?.querySelector('.ipc-metadata-list-summary-item__t'))
+      .map(e => {
         return {
           href: (e as HTMLAnchorElement)?.href,
           name: (e as HTMLAnchorElement)?.innerText
@@ -80,12 +80,10 @@ async function startCrawlWithProfile(props: Props) {
     imdbURL,
   })
 
-  console.log(allSpecials, comedianName)
-
   if (allSpecials) {
 
     const crawelTasks = allSpecials
-    .slice(0, 1)
+    // .slice(0, 2)
     .map((s) => {
       return new Promise(async (resolve) => {
         const {
@@ -146,10 +144,11 @@ export default async function main(imdbURL = 'https://www.imdb.com/name/nm015263
   const infos = await startCrawlWithProfile({
     imdbURL,
   })
-  fs.writeFile(path.resolve(__dirname, 'settings.json'), JSON.stringify(infos), function(error) {
+  fs.writeFile(path.resolve(__dirname, `${infos?.name}.json`), JSON.stringify(infos), function(error) {
     if (error) {
       console.log(error)
     }
+    console.log('write file done')
   })
   await browser.close();
 }

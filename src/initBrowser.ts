@@ -6,6 +6,6 @@ export async function initBrowser(){
   browser = await puppeteer.launch({
     product: 'chrome',
     headless: false,
-    devtools: true
+    // devtools: true
   });
 }

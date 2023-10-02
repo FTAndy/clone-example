@@ -36,11 +36,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.exists = exports.getRandom1to5 = void 0;
-function getRandom1to5() {
-    return Math.floor(Math.random() * 100 / 20) + 1;
+exports.exists = exports.getRandom = void 0;
+function getRandom(toTime) {
+    if (toTime === void 0) { toTime = 5; }
+    return Math.floor(Math.random() * toTime) + 1;
 }
-exports.getRandom1to5 = getRandom1to5;
+exports.getRandom = getRandom;
 function exists(page, elementName) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
