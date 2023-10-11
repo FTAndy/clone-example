@@ -47,7 +47,9 @@ function getBilibiliVideoEmbedUrl(specialName, comedianName) {
                 case 1:
                     bilibiliPage = _a.sent();
                     return [4 /*yield*/, bilibiliPage
-                            .goto('https://search.bilibili.com/')
+                            .goto('https://search.bilibili.com/', {
+                            timeout: 60 * 1000
+                        })
                         // await bilibiliPage.waitForTimeout(getRandom(10) * 1000)
                     ];
                 case 2:
@@ -76,7 +78,9 @@ function getBilibiliVideoEmbedUrl(specialName, comedianName) {
                 case 7:
                     videoUrl = _a.sent();
                     if (!videoUrl) return [3 /*break*/, 11];
-                    return [4 /*yield*/, bilibiliPage.goto(videoUrl)];
+                    return [4 /*yield*/, bilibiliPage.goto(videoUrl, {
+                            timeout: 60 * 1000
+                        })];
                 case 8:
                     _a.sent();
                     return [4 /*yield*/, bilibiliPage.waitForSelector('#share-btn-iframe')];

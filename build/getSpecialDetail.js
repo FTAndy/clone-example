@@ -48,7 +48,9 @@ function getSpecialDetail(specialUrl) {
                     return [4 /*yield*/, initBrowser_1.browser.newPage()];
                 case 1:
                     specialPage = _a.sent();
-                    return [4 /*yield*/, specialPage.goto(specialUrl)
+                    return [4 /*yield*/, specialPage.goto(specialUrl, {
+                            timeout: 60 * 1000
+                        })
                         // console.log('goto ', specialUrl)
                     ];
                 case 2:

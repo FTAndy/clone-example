@@ -13,7 +13,9 @@ export async function getBilibiliVideoEmbedUrl(specialName: string, comedianName
   const bilibiliPage = await browser.newPage();
 
   await bilibiliPage
-    .goto('https://search.bilibili.com/')
+    .goto('https://search.bilibili.com/', {
+      timeout: 60 * 1000
+    })
 
   // await bilibiliPage.waitForTimeout(getRandom(10) * 1000)
 
@@ -34,7 +36,9 @@ export async function getBilibiliVideoEmbedUrl(specialName: string, comedianName
   })
 
   if (videoUrl) {
-    await bilibiliPage.goto(videoUrl)
+    await bilibiliPage.goto(videoUrl, {
+      timeout: 60 * 1000
+    })
 
     await bilibiliPage.waitForSelector('#share-btn-iframe')
     

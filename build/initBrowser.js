@@ -48,6 +48,7 @@ function initBrowser() {
                 case 0: return [4 /*yield*/, puppeteer_1.default.launch({
                         product: 'chrome',
                         headless: false,
+                        timeout: 60 * 1000
                         // devtools: true
                     })];
                 case 1:

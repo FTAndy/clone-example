@@ -5,7 +5,9 @@ export async function getSpecialDetail(specialUrl: string) {
   try {
     const specialPage = await browser.newPage();
 
-    await specialPage.goto(specialUrl)
+    await specialPage.goto(specialUrl, {
+      timeout: 60 * 1000
+    })
 
     // console.log('goto ', specialUrl)
 

@@ -110,12 +110,22 @@ function getSpecials(props) {
                 case 13:
                     _a.sent();
                     return [4 /*yield*/, profilePage.evaluate(function () {
+                            var seeMoreButton = document.querySelector('.ipc-see-more__text');
+                            if (seeMoreButton) {
+                                seeMoreButton.click();
+                            }
+                        })];
+                case 14:
+                    _a.sent();
+                    return [4 /*yield*/, profilePage.waitForTimeout(1000)];
+                case 15:
+                    _a.sent();
+                    return [4 /*yield*/, profilePage.evaluate(function () {
                             var specialElements = document.querySelectorAll('.ipc-metadata-list-summary-item__tc');
                             if (specialElements) {
                                 var specialElementsArray = Array.from(specialElements);
                                 return specialElementsArray
                                     .filter(function (e) { return (e === null || e === void 0 ? void 0 : e.innerHTML.includes('Special')) || (e === null || e === void 0 ? void 0 : e.innerHTML.includes('Video')); })
-                                    .slice(0, 1)
                                     .map(function (e) { return e === null || e === void 0 ? void 0 : e.querySelector('.ipc-metadata-list-summary-item__t'); })
                                     .map(function (e) {
                                     return {
@@ -125,7 +135,7 @@ function getSpecials(props) {
                                 });
                             }
                         })];
-                case 14:
+                case 16:
                     allSpecials = _a.sent();
                     return [2 /*return*/, {
                             allSpecials: allSpecials,
@@ -151,7 +161,7 @@ function startCrawlWithProfile(props) {
                     _a = _b.sent(), allSpecials = _a.allSpecials, comedianName = _a.comedianName;
                     if (!allSpecials) return [3 /*break*/, 3];
                     crawelTasks = allSpecials
-                        // .slice(0, 2)
+                        .slice(0, 2)
                         .map(function (s) {
                         return new Promise(function (resolve) { return __awaiter(_this, void 0, void 0, function () {
                             var _a, bilibiliEmbedUrl, specialDetail;
@@ -166,7 +176,8 @@ function startCrawlWithProfile(props) {
                                         _a = _b.sent(), bilibiliEmbedUrl = _a.bilibiliEmbedUrl, specialDetail = _a.specialDetail;
                                         resolve({
                                             bilibiliEmbedUrl: bilibiliEmbedUrl,
-                                            specialDetail: specialDetail
+                                            specialDetail: specialDetail,
+                                            specialName: s.name
                                         });
                                         return [2 /*return*/];
                                 }
@@ -201,7 +212,7 @@ function getOneSpecialInfo(_a) {
                     _b = _c.sent(), bilibiliEmbedUrl = _b[0], specialDetail = _b[1];
                     return [2 /*return*/, {
                             bilibiliEmbedUrl: bilibiliEmbedUrl,
-                            specialDetail: specialDetail
+                            specialDetail: specialDetail,
                         }];
                 case 2:
                     error_1 = _c.sent();

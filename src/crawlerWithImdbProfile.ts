@@ -49,6 +49,18 @@ async function getSpecials(props: Props) {
 
   await profilePage.waitForSelector('.filmo-section-writer')
 
+  const hasSeeMoreButton = await profilePage.evaluate(() => {
+    const seeMoreButton = document.querySelector('.ipc-see-more__text')
+    if (seeMoreButton) {
+      (seeMoreButton as any).click()
+    }
+    return seeMoreButton
+  })
+
+  if (hasSeeMoreButton) {
+    await profilePage.waitForTimeout(1000)
+  }
+
   const allSpecials = await profilePage.evaluate(() => {
     let specialElements = document.querySelectorAll('.ipc-metadata-list-summary-item__tc')
     if (specialElements) {
@@ -83,7 +95,7 @@ async function startCrawlWithProfile(props: Props) {
   if (allSpecials) {
 
     const crawelTasks = allSpecials
-    // .slice(0, 2)
+    .slice(0, 2)
     .map((s) => {
       return new Promise(async (resolve) => {
         const {
@@ -97,7 +109,8 @@ async function startCrawlWithProfile(props: Props) {
 
         resolve({
           bilibiliEmbedUrl,
-          specialDetail
+          specialDetail,
+          specialName: s.name
         })
       })
     })
@@ -126,7 +139,7 @@ async function getOneSpecialInfo({ specialName, specialUrl, comedianName } : {
     ) 
     return {
       bilibiliEmbedUrl, 
-      specialDetail
+      specialDetail,
     }
   } catch (error) {
     console.log('error getOneSpecialInfo', error)
