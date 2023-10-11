@@ -95,7 +95,7 @@ async function startCrawlWithProfile(props: Props) {
   if (allSpecials) {
 
     const crawelTasks = allSpecials
-    .slice(0, 2)
+    // .slice(0, 2)
     .map((s) => {
       return new Promise(async (resolve) => {
         const {
@@ -157,7 +157,7 @@ export default async function main(imdbURL = 'https://www.imdb.com/name/nm015263
   const infos = await startCrawlWithProfile({
     imdbURL,
   })
-  fs.writeFile(path.resolve(__dirname, `${infos?.name}.json`), JSON.stringify(infos), function(error) {
+  fs.writeFile(path.resolve(__dirname, '..', 'temp', `${infos?.name}-${new Date().getTime()}.json`), JSON.stringify(infos), function(error) {
     if (error) {
       console.log(error)
     }
