@@ -48,8 +48,10 @@
     "typescript": "^4.7.4"
   },
   "dependencies": {
+    "chatgpt": "^5.2.5",
     "jest-cucumber": "^3.0.1",
     "nightmare": "^3.0.2",
-    "puppeteer": "^21.3.4"
+    "puppeteer": "^21.3.4",
+    "srt-to-ass": "^0.1.10"
   }
 }

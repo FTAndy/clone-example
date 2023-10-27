@@ -5,7 +5,8 @@ import {
   exists 
 } from './utils'
 import { initBrowser, browser } from './initBrowser'
-import {getBilibiliVideoEmbedUrl} from './getBilibiliVideoEmbedUrl'
+import {getBilibiliVideoInfo} from './getBilibiliVideoInfo'
+import { getTheHighestResolutionImg } from './utils'
 import {getSpecialDetail} from './getSpecialDetail'
 // list: https://www.imdb.com/list/ls003453197/
 
@@ -49,6 +50,16 @@ async function getSpecials(props: Props) {
 
   await profilePage.waitForSelector('.filmo-section-writer')
 
+  await profilePage.exposeFunction("_getTheHighestResolutionImg", getTheHighestResolutionImg);
+  
+  // TODO: get higher resolution 
+  const avatarImgURL = await profilePage.evaluate(async () => {
+    const element = document.querySelector('.photos-image .ipc-image')
+    const imgURLs = (element as any)?.srcset.split(', ')
+    const highResolutionUrl = (window as any)._getTheHighestResolutionImg(imgURLs)
+    return highResolutionUrl
+  })
+
   const hasSeeMoreButton = await profilePage.evaluate(() => {
     const seeMoreButton = document.querySelector('.ipc-see-more__text')
     if (seeMoreButton) {
@@ -79,7 +90,8 @@ async function getSpecials(props: Props) {
   
   return {
     allSpecials,
-    comedianName
+    comedianName,
+    avatarImgURL
   }
 }
 
@@ -88,18 +100,18 @@ async function getSpecials(props: Props) {
 async function startCrawlWithProfile(props: Props) {
   const { imdbURL } = props
 
-  const { allSpecials, comedianName } = await getSpecials({
+  const { allSpecials, comedianName, avatarImgURL } = await getSpecials({
     imdbURL,
   })
 
   if (allSpecials) {
 
     const crawelTasks = allSpecials
-    // .slice(0, 2)
+    .slice(0, 2)
     .map((s) => {
       return new Promise(async (resolve) => {
         const {
-          bilibiliEmbedUrl, 
+          bilibiliInfo, 
           specialDetail
         } = await getOneSpecialInfo({
           specialName: s.name,
@@ -108,18 +120,19 @@ async function startCrawlWithProfile(props: Props) {
         })
 
         resolve({
-          bilibiliEmbedUrl,
+          bilibiliInfo,
           specialDetail,
           specialName: s.name
         })
       })
     })
 
-    const specialDetails = await Promise.all(crawelTasks)
+    const specials = await Promise.all(crawelTasks)
   
     return {
       name: comedianName,
-      specialDetails,
+      avatarImgURL,
+      specials,
     }
   }
 }
@@ -129,16 +142,16 @@ async function getOneSpecialInfo({ specialName, specialUrl, comedianName } : {
 }) {
   try {
     const [
-      bilibiliEmbedUrl, 
+      bilibiliInfo,
       specialDetail
     ] = await Promise.all(
       [
-        getBilibiliVideoEmbedUrl(specialName, comedianName), 
+        getBilibiliVideoInfo(specialName, comedianName), 
         getSpecialDetail(specialUrl)
       ]
     ) 
     return {
-      bilibiliEmbedUrl, 
+      bilibiliInfo, 
       specialDetail,
     }
   } catch (error) {
@@ -157,7 +170,7 @@ export default async function main(imdbURL = 'https://www.imdb.com/name/nm015263
   const infos = await startCrawlWithProfile({
     imdbURL,
   })
-  fs.writeFile(path.resolve(__dirname, '..', 'temp', `${infos?.name}-${new Date().getTime()}.json`), JSON.stringify(infos), function(error) {
+  fs.writeFile(path.resolve(__dirname, '..', 'temp', `${infos?.name}.json`), JSON.stringify(infos), function(error) {
     if (error) {
       console.log(error)
     }

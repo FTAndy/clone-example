@@ -10,3 +10,20 @@ export async function exists(page: Page, elementName: string) {
     return document.querySelector(name)?.innerHTML
   }, elementName)
 }
+
+export function sleep(time: number) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(null)
+    }, time)
+  })
+}
+
+export function getTheHighestResolutionImg(imgURLs: Array<string>) {
+  if ((imgURLs as Array<string>)?.length > 0) {
+    const urlString = imgURLs[imgURLs.length - 1]
+    const highResolutionUrl = /(.+) (?:.+w)/.exec(urlString)
+    return highResolutionUrl?.[1] || ''
+  }
+  return ''
+}

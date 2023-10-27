@@ -1,4 +1,5 @@
 import {browser} from './initBrowser'
+import { getTheHighestResolutionImg } from './utils'
 
 export async function getSpecialDetail(specialUrl: string) {
 
@@ -32,15 +33,13 @@ export async function getSpecialDetail(specialUrl: string) {
       return (element as HTMLElement)?.innerText
     })
 
-    const coverImgURL = await specialPage.evaluate(() => {
+    await specialPage.exposeFunction("_getTheHighestResolutionImg", getTheHighestResolutionImg);
+
+    const coverImgURL = await specialPage.evaluate(async () => {
       const element = document.querySelector('.ipc-image')
       const imgURLs = (element as any)?.srcset.split(', ')
-      if ((imgURLs as Array<string>)?.length > 0) {
-        const urlString = imgURLs[imgURLs.length - 1]
-        const highResolutionUrl = /(.+) (?:.+w)/.exec(urlString)
-        return highResolutionUrl?.[1] || ''
-      }
-      return (element as any)?.srcset.split(', ')
+      const highResolutionUrl = (window as any)._getTheHighestResolutionImg(imgURLs)
+      return highResolutionUrl      
     })
 
     const tags = await specialPage.evaluate(() => {
