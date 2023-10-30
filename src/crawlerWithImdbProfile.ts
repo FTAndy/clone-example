@@ -1,180 +1,204 @@
-import fs from 'fs'
-import path from 'path'
-import { 
-  getRandom,
-  exists 
-} from './utils'
-import { initBrowser, browser } from './initBrowser'
-import {getBilibiliVideoInfo} from './getBilibiliVideoInfo'
-import { getTheHighestResolutionImg } from './utils'
-import {getSpecialDetail} from './getSpecialDetail'
+import fs from 'fs';
+import path from 'path';
+import 'dotenv/config'
+import { getRandom, exists } from './utils';
+import { initBrowser, browser } from './initBrowser';
+import { getBilibiliVideoInfo } from './getBilibiliVideoInfo';
+import MongoClient from './mongo'
+import { getTheHighestResolutionImg } from './utils';
+import { getSpecialDetail } from './getSpecialDetail';
 // list: https://www.imdb.com/list/ls003453197/
 
 interface Props {
-  imdbURL: string,
+  imdbURL: string;
 }
 
 async function getSpecials(props: Props) {
-  const { imdbURL } = props
+  const { imdbURL } = props;
 
   const profilePage = await browser.newPage();
 
-  await profilePage.goto(imdbURL)
+  await profilePage.goto(imdbURL);
 
-  await profilePage.waitForSelector('[data-testid="hero__pageTitle"] span')
+  await profilePage.waitForSelector('[data-testid="hero__pageTitle"] span');
 
-  const comedianName = await profilePage.evaluate(() => {
-    return document.querySelector('[data-testid="hero__pageTitle"] span')?.innerHTML
-  }) || ''
+  const comedianName =
+    (await profilePage.evaluate(() => {
+      return document.querySelector('[data-testid="hero__pageTitle"] span')
+        ?.innerHTML;
+    })) || '';
 
-  let flag = true
+  let flag = true;
 
   while (flag) {
-    const isThereATag = await exists(profilePage, '.ipc-chip--active')
+    const isThereATag = await exists(profilePage, '.ipc-chip--active');
     if (isThereATag) {
-      await profilePage.click('.ipc-chip--active')
-      await profilePage.waitForTimeout(1000 * getRandom())
+      await profilePage.click('.ipc-chip--active');
+      await profilePage.waitForTimeout(1000 * getRandom());
     } else {
-      flag = false
+      flag = false;
     }
   }
 
-  await profilePage.click('#name-filmography-filter-writer')
+  await profilePage.click('#name-filmography-filter-writer');
 
   setTimeout(async () => {
-    const errorExist = await exists(profilePage, '[data-testid="retry-error"]')
+    const errorExist = await exists(profilePage, '[data-testid="retry-error"]');
     if (errorExist) {
-      await profilePage.click('[data-testid="retry"]')
+      await profilePage.click('[data-testid="retry"]');
     }
-  }, 5000)
+  }, 5000);
 
-  await profilePage.waitForSelector('.filmo-section-writer')
+  await profilePage.waitForSelector('.filmo-section-writer');
 
-  await profilePage.exposeFunction("_getTheHighestResolutionImg", getTheHighestResolutionImg);
-  
-  // TODO: get higher resolution 
+  await profilePage.exposeFunction(
+    '_getTheHighestResolutionImg',
+    getTheHighestResolutionImg,
+  );
+
+  // TODO: get higher resolution
   const avatarImgURL = await profilePage.evaluate(async () => {
-    const element = document.querySelector('.photos-image .ipc-image')
-    const imgURLs = (element as any)?.srcset.split(', ')
-    const highResolutionUrl = (window as any)._getTheHighestResolutionImg(imgURLs)
-    return highResolutionUrl
-  })
+    const element = document.querySelector('.photos-image .ipc-image');
+    const imgURLs = (element as any)?.srcset.split(', ');
+    const highResolutionUrl = (window as any)._getTheHighestResolutionImg(
+      imgURLs,
+    );
+    return highResolutionUrl;
+  });
 
   const hasSeeMoreButton = await profilePage.evaluate(() => {
-    const seeMoreButton = document.querySelector('.ipc-see-more__text')
+    const seeMoreButton = document.querySelector('.ipc-see-more__text');
     if (seeMoreButton) {
-      (seeMoreButton as any).click()
+      (seeMoreButton as any).click();
     }
-    return seeMoreButton
-  })
+    return seeMoreButton;
+  });
 
   if (hasSeeMoreButton) {
-    await profilePage.waitForTimeout(1000)
+    await profilePage.waitForTimeout(1000);
   }
 
   const allSpecials = await profilePage.evaluate(() => {
-    let specialElements = document.querySelectorAll('.ipc-metadata-list-summary-item__tc')
+    let specialElements = document.querySelectorAll(
+      '.ipc-metadata-list-summary-item__tc',
+    );
     if (specialElements) {
-      const specialElementsArray = Array.from(specialElements)
+      const specialElementsArray = Array.from(specialElements);
       return specialElementsArray
-      .filter(e => e?.innerHTML.includes('Special') || e?.innerHTML.includes('Video'))
-      .map(e => e?.querySelector('.ipc-metadata-list-summary-item__t'))
-      .map(e => {
-        return {
-          href: (e as HTMLAnchorElement)?.href,
-          name: (e as HTMLAnchorElement)?.innerText
-        }
-      })
+        .filter(
+          (e) =>
+            e?.innerHTML.includes('Special') || e?.innerHTML.includes('Video'),
+        )
+        .map((e) => e?.querySelector('.ipc-metadata-list-summary-item__t'))
+        .map((e) => {
+          return {
+            href: (e as HTMLAnchorElement)?.href,
+            name: (e as HTMLAnchorElement)?.innerText,
+          };
+        });
     }
-  })
-  
+  });
+
   return {
     allSpecials,
     comedianName,
-    avatarImgURL
-  }
+    avatarImgURL,
+  };
 }
-
 
 // TODO: get cover image from netflix: https://www.netflix.com/sg/title/81625055
 async function startCrawlWithProfile(props: Props) {
-  const { imdbURL } = props
+  const { imdbURL } = props;
 
   const { allSpecials, comedianName, avatarImgURL } = await getSpecials({
     imdbURL,
-  })
+  });
 
   if (allSpecials) {
-
     const crawelTasks = allSpecials
-    .slice(0, 2)
+    .slice(0, 1)
     .map((s) => {
       return new Promise(async (resolve) => {
-        const {
-          bilibiliInfo, 
-          specialDetail
-        } = await getOneSpecialInfo({
+        const { bilibiliInfo, specialDetail } = await getOneSpecialInfo({
           specialName: s.name,
           specialUrl: s.href,
-          comedianName
-        })
+          comedianName,
+        });
 
         resolve({
           bilibiliInfo,
           specialDetail,
-          specialName: s.name
-        })
-      })
-    })
+          specialName: s.name,
+        });
+      });
+    });
 
-    const specials = await Promise.all(crawelTasks)
-  
+    const specials = await Promise.all(crawelTasks);
+
     return {
       name: comedianName,
       avatarImgURL,
       specials,
-    }
+    };
   }
 }
 
-async function getOneSpecialInfo({ specialName, specialUrl, comedianName } : {
-  specialName: string, specialUrl: string, comedianName: string
+async function getOneSpecialInfo({
+  specialName,
+  specialUrl,
+  comedianName,
+}: {
+  specialName: string;
+  specialUrl: string;
+  comedianName: string;
 }) {
   try {
-    const [
+    const [bilibiliInfo, specialDetail] = await Promise.all([
+      getBilibiliVideoInfo(specialName, comedianName),
+      getSpecialDetail(specialUrl),
+    ]);
+    return {
       bilibiliInfo,
-      specialDetail
-    ] = await Promise.all(
-      [
-        getBilibiliVideoInfo(specialName, comedianName), 
-        getSpecialDetail(specialUrl)
-      ]
-    ) 
-    return {
-      bilibiliInfo, 
       specialDetail,
-    }
+    };
   } catch (error) {
-    console.log('error getOneSpecialInfo', error)
+    console.log('error getOneSpecialInfo', error);
     return {
-      bilibiliEmbedUrl: '', 
-      specialDetail: ''
-    }
+      bilibiliEmbedUrl: '',
+      specialDetail: '',
+    };
   }
 }
 
-export default async function main(imdbURL = 'https://www.imdb.com/name/nm0152638/?ref_=nmls_hd') {
-  
-  await initBrowser()
+export default async function main(
+  imdbURL = 'https://www.imdb.com/name/nm0152638/?ref_=nmls_hd',
+) {
+  await initBrowser();
 
   const infos = await startCrawlWithProfile({
     imdbURL,
-  })
-  fs.writeFile(path.resolve(__dirname, '..', 'temp', `${infos?.name}.json`), JSON.stringify(infos), function(error) {
-    if (error) {
-      console.log(error)
-    }
-    console.log('write file done')
-  })
+  });
+
+  await MongoClient.connect()
+
+  const Database = MongoClient.db("standup-wiki");
+  const Comedian = Database.collection("comedian");
+
+  if (infos) {
+    await Comedian.insertOne(infos)
+  }
+
+  await MongoClient.close()
+
+  // fs.writeFile(
+  //   path.resolve(__dirname, '..', 'temp', `${infos?.name}.json`),
+  //   JSON.stringify(infos),
+  //   function (error) {
+  //     if (error) {
+  //       console.log(error);
+  //     }
+  //     console.log('write file done');
+  //   },
+  // );
   await browser.close();
 }
