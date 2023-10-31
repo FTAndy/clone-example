@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import 'dotenv/config'
 import { getRandom, exists } from './utils';
@@ -185,20 +185,19 @@ export default async function main(
   const Comedian = Database.collection("comedian");
 
   if (infos) {
-    await Comedian.insertOne(infos)
+    const filter = { name: infos?.name };
+    const options = { upsert: true };
+    const updateDoc = {
+      $set: infos,
+    };
+    await Comedian.updateOne(filter, updateDoc, options)
   }
 
   await MongoClient.close()
 
-  // fs.writeFile(
-  //   path.resolve(__dirname, '..', 'temp', `${infos?.name}.json`),
-  //   JSON.stringify(infos),
-  //   function (error) {
-  //     if (error) {
-  //       console.log(error);
-  //     }
-  //     console.log('write file done');
-  //   },
-  // );
+  await fs.writeFile(
+    path.resolve(__dirname, '..', 'temp', `${infos?.name}.json`),
+    JSON.stringify(infos),
+  );
   await browser.close();
 }

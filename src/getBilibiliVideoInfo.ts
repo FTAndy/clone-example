@@ -81,6 +81,7 @@ export async function getBilibiliVideoInfo(
         // "英语（美国）"
         lan_doc: string;
         subtitle_url: string;
+        subtitleASSURL: string
       }> = [];
 
       // copy from https://github.com/IndieKKY/bilibili-subtitle/blob/eaf465a6a94872682fdb08f27404b16749aab7e2/src/chrome/content-script.cjs
@@ -110,8 +111,6 @@ export async function getBilibiliVideoInfo(
 
     const { aid, bvid, cid, subtitles } = videoInfo;
 
-    let subtitleURL = ''
-
     if (subtitles?.length) {
       for (const subtitle of subtitles) {
         const subtitleJSONData = await fetch(
@@ -133,7 +132,7 @@ export async function getBilibiliVideoInfo(
           assFileName
         );
         await fs.writeFile(srtFile, srtFormat);
-        srtToAss.convert(srtFile, assFile);        
+        await srtToAss.convert(srtFile, assFile);        
         // create container client
         const containerClient = await blobServiceClient.getContainerClient(containerName);
 
@@ -143,7 +142,9 @@ export async function getBilibiliVideoInfo(
         // upload file
         await blobClient.uploadFile(assFile);
         
-        subtitleURL = `https://andycdn-fndbfaewgxbve2ha.z01.azurefd.net/subtitle2/${assFileName}`
+        console.log('upload ass done')
+
+        subtitle.subtitleASSURL = `https://andycdn-fndbfaewgxbve2ha.z01.azurefd.net/subtitle2/${assFileName}`
       }
     }
 
@@ -155,7 +156,6 @@ export async function getBilibiliVideoInfo(
       cid,
       aid,
       bvid,
-      subtitleURL
     };
   }
 }
