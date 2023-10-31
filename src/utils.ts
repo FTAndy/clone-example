@@ -28,6 +28,6 @@ export function getTheHighestResolutionImg(imgURLs: Array<string>) {
   return '';
 }
 
-export function trimSpaceAndQuestionMark(string: string) {
-  return string.replaceAll(' ', '').replaceAll('?', '')
+export function trimSpecial(string: string) {
+  return string.replaceAll(' ', '').replaceAll('?', '').replaceAll("'", '')
 }

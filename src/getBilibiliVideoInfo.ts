@@ -5,7 +5,7 @@ import { BlobServiceClient, StorageSharedKeyCredential } from '@azure/storage-bl
 import fs from 'fs/promises';
 import srtToAss from 'srt-to-ass';
 import path from 'path';
-import { getRandom, sleep, trimSpaceAndQuestionMark } from './utils';
+import { getRandom, sleep, trimSpecial } from './utils';
 
 const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
 const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
@@ -110,6 +110,8 @@ export async function getBilibiliVideoInfo(
 
     const { aid, bvid, cid, subtitles } = videoInfo;
 
+    let subtitleURL = ''
+
     if (subtitles?.length) {
       for (const subtitle of subtitles) {
         const subtitleJSONData = await fetch(
@@ -122,11 +124,13 @@ export async function getBilibiliVideoInfo(
           'temp',
           `${comedianName}-${specialName}-${subtitle.lan}.srt`,
         );
+        const assFileName = trimSpecial(`${comedianName}-${specialName}-${subtitle.lan}.ass`)
+
         const assFile = path.resolve(
           __dirname,
           '..',
           'temp',
-          `${comedianName}-${specialName}-${subtitle.lan}.ass`,
+          assFileName
         );
         await fs.writeFile(srtFile, srtFormat);
         srtToAss.convert(srtFile, assFile);        
@@ -134,10 +138,12 @@ export async function getBilibiliVideoInfo(
         const containerClient = await blobServiceClient.getContainerClient(containerName);
 
         // create blob client
-        const blobClient = await containerClient.getBlockBlobClient(trimSpaceAndQuestionMark(`${comedianName}_${specialName}_${subtitle.lan}.ass`));
+        const blobClient = await containerClient.getBlockBlobClient(assFileName);
 
-        // download file
+        // upload file
         await blobClient.uploadFile(assFile);
+        
+        subtitleURL = `https://andycdn-fndbfaewgxbve2ha.z01.azurefd.net/subtitle2/${assFileName}`
       }
     }
 
@@ -149,6 +155,7 @@ export async function getBilibiliVideoInfo(
       cid,
       aid,
       bvid,
+      subtitleURL
     };
   }
 }
