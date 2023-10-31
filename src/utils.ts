@@ -27,3 +27,7 @@ export function getTheHighestResolutionImg(imgURLs: Array<string>) {
   }
   return '';
 }
+
+export function trimSpaceAndQuestionMark(string: string) {
+  return string.replaceAll(' ', '').replaceAll('?', '')
+}

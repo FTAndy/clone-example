@@ -1,10 +1,26 @@
 import { browser } from './initBrowser';
 import bilibiliCookie from './bilibiliCookie.json';
 import { generateSrtSubtitle } from './generateSrtSubtitle';
+import { BlobServiceClient, StorageSharedKeyCredential } from '@azure/storage-blob'
 import fs from 'fs/promises';
 import srtToAss from 'srt-to-ass';
 import path from 'path';
-import { getRandom, sleep } from './utils';
+import { getRandom, sleep, trimSpaceAndQuestionMark } from './utils';
+
+const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
+const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
+if (!accountName) throw Error('Azure Storage accountName not found');
+if (!accountKey) throw Error('Azure Storage accountKey not found');
+
+const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
+
+const blobServiceClient = new BlobServiceClient(
+  `https://${accountName}.blob.core.windows.net`,
+  sharedKeyCredential
+);
+
+const containerName = 'subtitle2';
+
 
 declare global {
   interface Window {
@@ -113,9 +129,15 @@ export async function getBilibiliVideoInfo(
           `${comedianName}-${specialName}-${subtitle.lan}.ass`,
         );
         await fs.writeFile(srtFile, srtFormat);
-        srtToAss.convert(srtFile, assFile);
-        // TODO: store to Amazon S3
-        
+        srtToAss.convert(srtFile, assFile);        
+        // create container client
+        const containerClient = await blobServiceClient.getContainerClient(containerName);
+
+        // create blob client
+        const blobClient = await containerClient.getBlockBlobClient(trimSpaceAndQuestionMark(`${comedianName}_${specialName}_${subtitle.lan}.ass`));
+
+        // download file
+        await blobClient.uploadFile(assFile);
       }
     }
 
