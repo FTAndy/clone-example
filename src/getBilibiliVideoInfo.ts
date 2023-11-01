@@ -142,8 +142,6 @@ export async function getBilibiliVideoInfo(
         // upload file
         await blobClient.uploadFile(assFile);
         
-        console.log('upload ass done')
-
         subtitle.subtitleASSURL = `https://andycdn-fndbfaewgxbve2ha.z01.azurefd.net/subtitle2/${assFileName}`
       }
     }

@@ -7,6 +7,7 @@ import { getBilibiliVideoInfo } from './getBilibiliVideoInfo';
 import MongoClient from './mongo'
 import { getTheHighestResolutionImg } from './utils';
 import { getSpecialDetail } from './getSpecialDetail';
+import getAIGeneratedContent from './getAIGeneratedContent'
 // list: https://www.imdb.com/list/ls003453197/
 
 interface Props {
@@ -115,30 +116,38 @@ async function startCrawlWithProfile(props: Props) {
   });
 
   if (allSpecials) {
-    const crawelTasks = allSpecials
+    const specialsTasks = allSpecials
     .slice(0, 1)
     .map((s) => {
-      return new Promise(async (resolve) => {
-        const { bilibiliInfo, specialDetail } = await getOneSpecialInfo({
+      return Promise.resolve()
+      .then(() => {
+        return getOneSpecialInfo({
           specialName: s.name,
           specialUrl: s.href,
           comedianName,
         });
-
-        resolve({
+      })
+      .then(({bilibiliInfo, specialDetail}) => {
+        return ({
           bilibiliInfo,
           specialDetail,
           specialName: s.name,
         });
-      });
+      })
     });
 
-    const specials = await Promise.all(crawelTasks);
+    const getWikiTask = getAIGeneratedContent(comedianName)
+    const getSpecialsTasks = Promise.all(specialsTasks)
+    
+    const [specials, AIGeneratedContent] = await Promise.all([getSpecialsTasks, getWikiTask]);
+
+    const latestSpecialImg = (specials as any)?.[0]?.specialDetail?.coverImgURL
 
     return {
       name: comedianName,
-      avatarImgURL,
+      avatarImgURL: latestSpecialImg ? latestSpecialImg : avatarImgURL,
       specials,
+      AIGeneratedContent
     };
   }
 }
@@ -175,14 +184,15 @@ export default async function main(
 ) {
   await initBrowser();
 
+  const Database = MongoClient.db("standup-wiki");
+  const Comedian = Database.collection("comedian");
+
+  await MongoClient.connect()
+
   const infos = await startCrawlWithProfile({
     imdbURL,
   });
 
-  await MongoClient.connect()
-
-  const Database = MongoClient.db("standup-wiki");
-  const Comedian = Database.collection("comedian");
 
   if (infos) {
     const filter = { name: infos?.name };
