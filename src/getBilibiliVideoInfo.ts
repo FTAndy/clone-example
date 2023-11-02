@@ -72,8 +72,8 @@ export async function getBilibiliVideoInfo(
       const { cidMap } = state;
       const keys = Object.keys(cidMap);
       const key = keys[0];
-      const videoInfo = cidMap[key];
-      const { aid, bvid } = videoInfo;
+      const vInfo = cidMap[key];
+      const { aid, bvid } = vInfo;
       const cid = key;
       let subtitles: Array<{
         // "en-US"
@@ -91,7 +91,9 @@ export async function getBilibiliVideoInfo(
       )
         .then((res) => res.json())
         .then((res) => res.data);
+
       const subtitleCid = pages[0].cid;
+
       await fetch(
         `https://api.bilibili.com/x/player/v2?aid=${aid}&cid=${subtitleCid}`,
         { credentials: 'include' },
@@ -132,12 +134,16 @@ export async function getBilibiliVideoInfo(
           assFileName
         );
         await fs.writeFile(srtFile, srtFormat);
-        await srtToAss.convert(srtFile, assFile);        
+        await new Promise((r) => {
+          srtToAss.convert(srtFile, assFile, {}, (error: any) => {
+            r(null)
+          });                  
+        })
         // create container client
-        const containerClient = await blobServiceClient.getContainerClient(containerName);
+        const containerClient = blobServiceClient.getContainerClient(containerName);
 
         // create blob client
-        const blobClient = await containerClient.getBlockBlobClient(assFileName);
+        const blobClient = containerClient.getBlockBlobClient(assFileName);
 
         // upload file
         await blobClient.uploadFile(assFile);

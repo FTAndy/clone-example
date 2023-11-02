@@ -117,7 +117,7 @@ async function startCrawlWithProfile(props: Props) {
 
   if (allSpecials) {
     const specialsTasks = allSpecials
-    .slice(0, 1)
+    .slice(0, 2)
     .map((s) => {
       return Promise.resolve()
       .then(() => {
@@ -136,10 +136,16 @@ async function startCrawlWithProfile(props: Props) {
       })
     });
 
-    const getWikiTask = getAIGeneratedContent(comedianName)
+    // const getWikiTask = getAIGeneratedContent(comedianName)
     const getSpecialsTasks = Promise.all(specialsTasks)
     
-    const [specials, AIGeneratedContent] = await Promise.all([getSpecialsTasks, getWikiTask]);
+    const [
+      specials, 
+      // AIGeneratedContent
+    ] = await Promise.all([
+      getSpecialsTasks,
+      // getWikiTask
+    ]);
 
     const latestSpecialImg = (specials as any)?.[0]?.specialDetail?.coverImgURL
 
@@ -147,7 +153,7 @@ async function startCrawlWithProfile(props: Props) {
       name: comedianName,
       avatarImgURL: latestSpecialImg ? latestSpecialImg : avatarImgURL,
       specials,
-      AIGeneratedContent
+      // AIGeneratedContent
     };
   }
 }
