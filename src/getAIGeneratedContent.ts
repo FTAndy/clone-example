@@ -50,6 +50,12 @@ export default async function getAIGeneratedContent(comedianName: string) {
   // const nodeFetch = await importDynamic('node-fetch')
   const api = new ChatGPTAPI({
     apiKey: process.env.OPENAI_API_KEY || '',
+    completionParams: {
+      // TODO: use gpt-4
+      // model: 'gpt-4',
+      // temperature: 0.5,
+      // top_p: 0.8
+    },
     fetch: (url: string, options = {}) => {
       const defaultOptions = {
         agent,

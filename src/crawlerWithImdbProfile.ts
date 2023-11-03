@@ -117,7 +117,6 @@ async function startCrawlWithProfile(props: Props) {
 
   if (allSpecials) {
     const specialsTasks = allSpecials
-    .slice(0, 2)
     .map((s) => {
       return Promise.resolve()
       .then(() => {
