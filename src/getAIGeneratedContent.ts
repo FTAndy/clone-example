@@ -24,7 +24,7 @@ const agent = new HttpsProxyAgent('http://127.0.0.1:7890');
 //   `
 // }
 
-const TIMEOUT = 3 * 60 * 1000
+const TIMEOUT = 1 * 60 * 1000
 
 const wikiPrompt = `
   You are a Wikipedia content creator specializing in the stand-up comedy field. Your job is to create content of Wikipedia style for stand-up comedians. Here are some restrictions for you.
@@ -79,13 +79,16 @@ export default async function getAIGeneratedContent(comedianName: string) {
   for (const _ of times) {
     conversation = await api.sendMessage(wikiPrompt, {
       timeoutMs: TIMEOUT,
+      // onProgress: (partialResponse: any) => console.log(partialResponse.text)
     })
     if ((conversation.text as string).includes('apologize') 
     ||  (conversation.text as string).includes(`I'm sorry`)
     || (conversation.text as string).includes(`I'm unable`)
+    || (conversation.text as string).includes('unable')
     ) {
       console.log('apologize', conversation.text)      
     } else {
+      console.log('Create figure successfully')
       break
     }
   }
@@ -94,26 +97,34 @@ export default async function getAIGeneratedContent(comedianName: string) {
 
   const wikiContent = await api.sendMessage(comedianName, {
     parentMessageId: conversation.id,
-    timeoutMs: TIMEOUT,
+    timeoutMs: TIMEOUT * 3,
     // onProgress: (partialResponse: any) => console.log(partialResponse.text)
   })
 
 
   console.log('Successful! Openai: ', wikiContent.text)
 
-  const brief = await api.sendMessage(`Conclude for me on why ${comedianName} is a great comedian, keep it concise`)
+  const brief = await api.sendMessage(`Conclude for me on why ${comedianName} is a great comedian, keep it concise`, {
+    timeoutMs: TIMEOUT * 2,
+  })
 
   console.log('Successful! Openai: ', brief.text)
 
-  const tags = await api.sendMessage(`Categorize styles of standup comedian ${comedianName} with concise tags into the format ['xx','yy',....'zz']. The output should not has any conversational content just containing the require content`)
+  const tags = await api.sendMessage(`Categorize styles of standup comedian ${comedianName} with concise tags into the format ['xx','yy',....'zz']. The output should not has any conversational content just containing the require content`, {
+    timeoutMs: TIMEOUT * 2,
+  })
 
-  const tagsArray = new Function(`return ${tags.text}`)()
+  console.log('Successful! Openai: ', tags.text)
 
-  console.log('Successful! Openai: ', tagsArray)
+  const tagsArray = new Function(`return ${tags.text}`)
+
+  const realTagArray = tagsArray()
+
+  console.log('Successful! Openai: ', realTagArray)
 
   return {
     wikiDetail: wikiContent.text,
     brief: brief.text,
-    tags: tags.text
+    tags: realTagArray
   }
 }
