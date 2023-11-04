@@ -5,8 +5,10 @@ import { getRandom, exists } from './utils';
 import { initBrowser, browser } from './initBrowser';
 import { getBilibiliVideoInfo } from './getBilibiliVideoInfo';
 import MongoClient from './mongo'
+import { ObjectId } from 'mongodb'
 import { getTheHighestResolutionImg } from './utils';
 import { omit } from 'lodash'
+import { maxLimitedAsync } from './maxLimitedAsync'
 import { getSpecialDetail } from './getSpecialDetail';
 import getAIGeneratedContent from './getAIGeneratedContent'
 import { TaskStatus } from './types'
@@ -48,7 +50,7 @@ async function getSpecials(imdbURL: string) {
   await profilePage.click('#name-filmography-filter-writer');
 
   setTimeout(async () => {
-    if (profilePage) {
+    if (profilePage && !profilePage.isClosed()) {
       const errorExist = await exists(profilePage, '[data-testid="retry-error"]');
       if (errorExist) {
         await profilePage.click('[data-testid="retry"]');
@@ -123,30 +125,36 @@ async function startCrawlWithProfile(props: Props) {
 
   const { allSpecials, comedianName, avatarImgURL } = await getSpecials(imdbURL);
 
-  let getSpecialsTasks: unknown = Promise.resolve([])
+  let getSpecialsTasks: Promise<Array<any>> = Promise.resolve([])
   let getAIGeneratedContentTask = Promise.resolve({})
 
   if (allSpecials?.length && needCrawlSpecialInfo === TaskStatus.notStarted) {
     const specialsTasks = allSpecials
     .map((s) => {
-      return Promise.resolve()
-      .then(() => {
-        return getOneSpecialInfo({
-          specialName: s.name,
-          specialUrl: s.href,
-          comedianName,
-        });
-      })
-      .then(({bilibiliInfo, specialDetail}) => {
-        return ({
-          bilibiliInfo,
-          specialDetail,
-          specialName: s.name,
-        });
-      })
+      return () => {
+        return Promise.resolve()
+        .then(() => {
+          return getOneSpecialInfo({
+            specialName: s.name,
+            specialUrl: s.href,
+            comedianName,
+          });
+        })
+        .then(({bilibiliInfo, specialDetail}) => {
+          return ({
+            bilibiliInfo,
+            specialDetail,
+            specialName: s.name,
+          });
+        })
+      }
     });
 
-    getSpecialsTasks = Promise.all(specialsTasks)
+    // getSpecialsTasks = Promise.all(specialsTasks)
+    getSpecialsTasks = maxLimitedAsync({
+      max: 5,
+      tasks: specialsTasks
+    })
   }
 
   if (needGenerateAIContent === TaskStatus.notStarted) {
@@ -203,14 +211,16 @@ export default async function main(props: Props) {
   try {
     const {
       imdbURL = 'https://www.imdb.com/name/nm0152638/?ref_=nmls_hd',
-      needCrawlSpecialInfo = true,
-      needGenerateAIContent = true
+      needCrawlSpecialInfo,
+      needGenerateAIContent
     } = props
   
     await initBrowser();
   
     const Database = MongoClient.db("standup-wiki");
     const Comedian = Database.collection("comedian");
+    const Special = Database.collection('special')
+    const CrawlerTask = Database.collection('crawlerTask')
   
     await MongoClient.connect()
   
@@ -219,19 +229,11 @@ export default async function main(props: Props) {
     const infos = await startCrawlWithProfile(props);
   
     if (infos) {
-      const filter = { name: infos?.name };
-      const options = { upsert: true };
       let dataSet = {}
       if (needGenerateAIContent === TaskStatus.notStarted) {
         dataSet = {
           ...dataSet,
           AIGeneratedContent: infos.AIGeneratedContent
-        }
-      }
-      if (needCrawlSpecialInfo === TaskStatus.notStarted) {
-        dataSet = {
-          ...dataSet,
-          specials: infos.specials
         }
       }
       dataSet = {
@@ -241,10 +243,33 @@ export default async function main(props: Props) {
           'specials'
         ])
       }
+      const filter = { name: infos?.name };
+      const options = { upsert: true };
+
       const updateDoc = {
         $set: dataSet
       };
       await Comedian.updateOne(filter, updateDoc, options)
+      const updatedComedian = await Comedian.findOne({
+        name: infos?.name
+      })
+
+      const comedianID = updatedComedian?._id
+
+      if (needCrawlSpecialInfo === TaskStatus.notStarted && comedianID && infos.specials.length > 0) {
+        for (const special of infos.specials) {
+          await Special.updateOne({
+            comedian_id: comedianID,
+            name: special.specialName,
+            bilibiliInfo: { $ne: null }
+          }, 
+          {
+            $set: special
+          },
+          { upsert: true }
+          )
+        }
+      }      
     }
   
     await MongoClient.close()
@@ -257,6 +282,7 @@ export default async function main(props: Props) {
   
     return true    
   } catch (error) {
+    console.log(error, 'error')
     return false
   }
 }

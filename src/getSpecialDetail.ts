@@ -23,6 +23,8 @@ export async function getSpecialDetail(specialUrl: string) {
       )?.innerHTML;
     });
 
+    const presentTime = new Date(datetime || '')
+
     const netflixURL = await specialPage.evaluate(() => {
       // const platform = document.querySelector('[data-testid="details-officialsites"] .ipc-inline-list__item a').innerText
       const element = document.querySelector(
@@ -64,6 +66,8 @@ export async function getSpecialDetail(specialUrl: string) {
       )?.innerHTML;
     });
 
+    await specialPage.close()
+
     // console.log(datetime, netflixURL, runtimeDuration, tags, rating, 'special info')
 
     return {
@@ -73,6 +77,7 @@ export async function getSpecialDetail(specialUrl: string) {
       tags,
       rating,
       coverImgURL,
+      presentTime
     };
   } catch (e) {
     console.log(e, 'specialUrl', specialUrl);

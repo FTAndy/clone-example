@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import { initBrowser, browser } from './initBrowser';
 import MongoClient from './mongo'
+import { ObjectId } from 'mongodb'
 import crawlerWithImdbProfile from './crawlerWithImdbProfile'
 import { finished } from 'stream';
 import { TaskStatus } from './types/index'
@@ -9,6 +10,7 @@ const START_URL = 'https://www.imdb.com/list/ls070242523/?sort=list_order,asc&mo
 
 
 type CarwlerTask = {
+  _id: ObjectId,
   name: string,
   type: string,
   specialStatus: TaskStatus,
@@ -69,6 +71,18 @@ async function start(){
     })
 
     console.log(Date.now() - now)
+
+    await CrawlerTask.updateOne({
+      _id: existComedian?._id
+    },
+    {
+      $set: {
+        specialStatus: 1,
+        needGenerateAIContent: 1
+      }
+    },
+    { upsert: true }
+    )
 
 
     if (success) {
