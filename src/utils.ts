@@ -31,3 +31,28 @@ export function getTheHighestResolutionImg(imgURLs: Array<string>) {
 export function trimSpecial(string: string) {
   return string.replaceAll(' ', '').replaceAll('?', '').replaceAll("'", '')
 }
+
+export function retryRace({
+  realEvent,
+  retryEvent,
+  retryTime = 3
+}: {
+  realEvent: () => Promise<any>,
+  retryEvent: () => Promise<'retry'>,
+  retryTime?: number
+}) {
+  return new Promise(async (resolve) => {
+    const times = new Array(retryTime)
+
+    for await (const _ of times) {
+      const retryOrResult = await Promise.race([realEvent(), retryEvent()])
+      if (retryOrResult === 'retry') {
+        continue
+      } else {
+        resolve(true)
+        return
+      }
+    }
+    resolve(false)
+  })
+}

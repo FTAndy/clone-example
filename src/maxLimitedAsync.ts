@@ -20,7 +20,6 @@ export async function maxLimitedAsync(props: Props): Promise<any> {
       curTask()
       .then((taskResult: any) => {
         result.push(taskResult)
-        console.log(result.length, totalTask, 'totalTask')
         if (result.length === totalTask) {
           resolve(result)
           return

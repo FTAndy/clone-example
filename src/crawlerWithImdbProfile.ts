@@ -8,9 +8,10 @@ import MongoClient from './mongo'
 import { ObjectId } from 'mongodb'
 import { getTheHighestResolutionImg } from './utils';
 import { omit } from 'lodash'
+import { Special } from './types'
 import { maxLimitedAsync } from './maxLimitedAsync'
 import { getSpecialDetail } from './getSpecialDetail';
-import getAIGeneratedContent from './getAIGeneratedContent'
+import getAIGeneratedContent, { isAShowStarredbyComedian } from './getAIGeneratedContent'
 import { TaskStatus } from './types'
 import { info } from 'console';
 // list: https://www.imdb.com/list/ls003453197/
@@ -18,7 +19,8 @@ import { info } from 'console';
 interface Props {
   imdbURL: string;
   needCrawlSpecialInfo: TaskStatus
-  needGenerateAIContent: TaskStatus
+  needGenerateAIContent: TaskStatus,
+  eventSource?: 'solo' | 'list'
 }
 
 async function getSpecials(imdbURL: string) {
@@ -50,11 +52,15 @@ async function getSpecials(imdbURL: string) {
   await profilePage.click('#name-filmography-filter-writer');
 
   setTimeout(async () => {
-    if (profilePage && !profilePage.isClosed()) {
-      const errorExist = await exists(profilePage, '[data-testid="retry-error"]');
-      if (errorExist) {
-        await profilePage.click('[data-testid="retry"]');
-      }
+    try {
+      if (profilePage && !profilePage.isClosed()) {
+        const errorExist = await exists(profilePage, '[data-testid="retry-error"]');
+        if (errorExist) {
+          await profilePage.click('[data-testid="retry"]');
+        }
+      }      
+    } catch (error) {
+      
     }
   }, 5000);
 
@@ -87,7 +93,7 @@ async function getSpecials(imdbURL: string) {
     await profilePage.waitForTimeout(1000);
   }
 
-  const allSpecials = await profilePage.evaluate(() => {
+  let allSpecials: Array<Special> | undefined = await profilePage.evaluate(() => {
     let specialElements = document.querySelectorAll(
       '.ipc-metadata-list-summary-item__tc',
     );
@@ -96,7 +102,7 @@ async function getSpecials(imdbURL: string) {
       return specialElementsArray
         .filter(
           (e) =>
-            e?.innerHTML.includes('Special') || e?.innerHTML.includes('Video'),
+            e?.innerHTML.includes('Special') || e?.innerHTML.includes('Video') || e?.querySelectorAll('.sc-9814c2de-0 > span')?.length === 1,
         )
         .map((e) => e?.querySelector('.ipc-metadata-list-summary-item__t'))
         .map((e) => {
@@ -108,8 +114,31 @@ async function getSpecials(imdbURL: string) {
     }
   });
 
+  if (allSpecials?.length) {
+    allSpecials = await Promise.all(allSpecials?.map(async (s) => {
+      let isStarred = true
+      if (!s.name.includes(comedianName)) {
+        isStarred = await isAShowStarredbyComedian({
+          showName: s.name,
+          comedianName: comedianName
+        })
+      }
+      return {
+        isStarred,
+        ...s
+      }
+    }))    
+
+    allSpecials = allSpecials.filter((s) => {
+      return s.isStarred
+    })
+  }
+
+
+  await profilePage.close()
+
   return {
-    allSpecials,
+    allSpecials: allSpecials || [],
     comedianName,
     avatarImgURL,
   };
@@ -161,13 +190,19 @@ async function startCrawlWithProfile(props: Props) {
     getAIGeneratedContentTask = getAIGeneratedContent(comedianName)
   }
 
-  const [
+  let [
     specials, 
     AIGeneratedContent
   ] = await Promise.all([
     getSpecialsTasks,
     getAIGeneratedContentTask
   ]);
+
+  if (specials.length > 0) {
+    specials = specials.filter(s => {
+      return s.bilibiliInfo
+    })
+  }
 
   const latestSpecialImg = (specials as any)?.[0]?.specialDetail?.coverImgURL
 
@@ -212,7 +247,8 @@ export default async function main(props: Props) {
     const {
       imdbURL = 'https://www.imdb.com/name/nm0152638/?ref_=nmls_hd',
       needCrawlSpecialInfo,
-      needGenerateAIContent
+      needGenerateAIContent,
+      eventSource = 'solo'
     } = props
   
     await initBrowser();
@@ -220,7 +256,6 @@ export default async function main(props: Props) {
     const Database = MongoClient.db("standup-wiki");
     const Comedian = Database.collection("comedian");
     const Special = Database.collection('special')
-    const CrawlerTask = Database.collection('crawlerTask')
   
     await MongoClient.connect()
   
@@ -228,6 +263,9 @@ export default async function main(props: Props) {
   
     const infos = await startCrawlWithProfile(props);
   
+
+    console.log('get infos')
+
     if (infos) {
       let dataSet = {}
       if (needGenerateAIContent === TaskStatus.notStarted) {
@@ -272,13 +310,16 @@ export default async function main(props: Props) {
       }      
     }
   
-    await MongoClient.close()
+    if (eventSource === 'solo') {
+      await MongoClient.close()
+    }
+
   
     // await fs.writeFile(
     //   path.resolve(__dirname, '..', 'temp', `${infos?.name}.json`),
     //   JSON.stringify(infos),
     // );
-    await browser.close();
+    // await browser.close();
   
     return true    
   } catch (error) {

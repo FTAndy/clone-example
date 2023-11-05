@@ -5,7 +5,7 @@ import { BlobServiceClient, StorageSharedKeyCredential } from '@azure/storage-bl
 import fs from 'fs/promises';
 import srtToAss from 'srt-to-ass';
 import path from 'path';
-import { getRandom, sleep, exists, trimSpecial } from './utils';
+import { getRandom, sleep, exists, trimSpecial, retryRace } from './utils';
 
 const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
 const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
@@ -34,10 +34,10 @@ export async function getBilibiliVideoInfo(
   specialName: string,
   comedianName: string,
 ) {
-  try {
-    const bilibiliPage = await browser.newPage();
+  const bilibiliPage = await browser.newPage();
 
-    bilibiliPage.setCookie(...bilibiliCookie);
+  bilibiliPage.setCookie(...bilibiliCookie);
+  try {
 
     await bilibiliPage.goto('https://search.bilibili.com/', {
       timeout: 60 * 1000,
@@ -54,23 +54,28 @@ export async function getBilibiliVideoInfo(
       button && (button as HTMLAnchorElement).click();
     });
 
-
-    // TODO: fix to Promise.race
-    setTimeout(async () => {
-      try {
-        if (bilibiliPage && !bilibiliPage.isClosed()) {
-          const errorExist = await exists(bilibiliPage, '.search-neterror-container');
-          if (errorExist) {
-            await bilibiliPage.click('.search-button');
-          }
-        }        
-      } catch (error) {
-        // console.log(error, 'error')
+    await retryRace({
+      realEvent: () => {
+        return bilibiliPage.waitForSelector('.video-list div a[href]')
+      },
+      retryEvent: () => {
+       return  new Promise((r) => {
+          setTimeout(async () => {
+            try {
+              if (bilibiliPage && !bilibiliPage.isClosed()) {
+                const errorExist = await exists(bilibiliPage, '.search-neterror-container');
+                if (errorExist) {
+                  await bilibiliPage.click('.search-button');
+                }
+              }        
+            } catch (error) {
+              // console.log(error, 'error')
+            }
+            r('retry')
+          }, 2000)
+        })
       }
-    }, 2000)
-
-    // TODO: neterror .search-neterror-container element
-    await bilibiliPage.waitForSelector('.video-list div a[href]');
+    })
 
     const videoUrl = await bilibiliPage.evaluate(() => {
       const element = document.querySelector('.video-list div a[href]');
@@ -183,6 +188,7 @@ export async function getBilibiliVideoInfo(
     }    
   } catch (error) {
     console.log(error, 'bilibili error')
-    return {}
+    await bilibiliPage.close()
+    return null
   }
 }

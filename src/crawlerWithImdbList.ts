@@ -1,22 +1,39 @@
 import 'dotenv/config'
 import { initBrowser, browser } from './initBrowser';
 import MongoClient from './mongo'
-import { ObjectId } from 'mongodb'
+import { CarwlerTask } from './types'
 import crawlerWithImdbProfile from './crawlerWithImdbProfile'
-import { finished } from 'stream';
 import { TaskStatus } from './types/index'
 
-const START_URL = 'https://www.imdb.com/list/ls070242523/?sort=list_order,asc&mode=detail&page=1'
+const START_URL = 'https://www.imdb.com/list/ls003453197/'
 
 
-type CarwlerTask = {
-  _id: ObjectId,
-  name: string,
-  type: string,
-  specialStatus: TaskStatus,
-  AIContentStatus: TaskStatus,
-  imdbID: string
-}
+
+
+
+// TODO: specific list to crawl
+const FILTER_NAME = [
+  `Patrice O'Neal`,
+  `Lenny Bruce`,
+  `Dick Gregory`,
+  `Barry Crimmins`,
+  `Steven Wright`,
+  `Garry Shandling`,
+  `Dennis Miller`,
+  `Paul Mooney`,
+  `Zach Galifianakis`,
+  `Tommy Johnagin`,
+  `Paul F. Tompkins`,
+  `Jon Dore`,
+  `Nick Swardson`,
+  `Brian Posehn`,
+  `Eddie Pepitone`,
+  `Nick Thune`,
+  `Dov Davidoff`,
+  `Doug Benson`,
+  `Ron Funches`,
+  `Russell Brand`
+]
 
 async function start(){
   await initBrowser();
@@ -41,7 +58,10 @@ async function start(){
   })
 
   comedianList = comedianList
-  .splice(0, 1)
+  .filter(s => {
+    return !FILTER_NAME.includes(s.name)
+  })
+  .splice(0, 10)
 
   const Database = MongoClient.db("standup-wiki");
   const CrawlerTask = Database.collection("crawlerTask");
@@ -52,6 +72,11 @@ async function start(){
     const existComedian = await CrawlerTask.findOne<CarwlerTask>({
       imdbID: comedian.imdbID
     })
+    if (existComedian && existComedian.status === 1) {
+      console.log(existComedian.name, ' skip!!!')
+      continue
+    }
+
     let needGenerateAIContent = TaskStatus.notStarted
     let needCrawlSpecialInfo = TaskStatus.notStarted
 
@@ -62,35 +87,57 @@ async function start(){
 
     console.log('start comedian', comedian.name, comedian.imdbID, comedian.profileLink)
 
+    console.log('existComedian', existComedian)
+
     let now = Date.now()
 
     const success = await crawlerWithImdbProfile({
       imdbURL: comedian.profileLink,
       needGenerateAIContent,
-      needCrawlSpecialInfo
+      needCrawlSpecialInfo,
+      eventSource: 'list'
     })
 
-    console.log(Date.now() - now)
+    console.log((Date.now() - now) / 60 / 1000, ' minutes')
 
-    await CrawlerTask.updateOne({
-      _id: existComedian?._id
-    },
-    {
-      $set: {
-        specialStatus: 1,
-        needGenerateAIContent: 1
-      }
-    },
-    { upsert: true }
-    )
-
-
+    let whereOption = {
+      name: comedian.name,
+    }
     if (success) {
+      console.log('success')
       // update
+      await CrawlerTask.updateOne(whereOption,
+      {
+        $set: {
+          name: comedian.name,
+          specialStatus: 1,
+          type: 'comedian',
+          AIContentStatus: 1,
+          imdbID: comedian.imdbID,
+          status: 1
+        }
+      },
+      { upsert: true }
+      )
     } else {
+      console.log('fail')
+      await CrawlerTask.updateOne(whereOption,
+      {
+        $set: {
+          name: comedian.name,
+          specialStatus: 0,
+          AIContentStatus: 0,
+          type: 'comedian',
+          imdbID: comedian.imdbID,
+          status: 99 // fail
+        }
+      },
+      { upsert: true }
+      )
       // record message
     }
   }
+  await MongoClient.close()
 }
 
 start()

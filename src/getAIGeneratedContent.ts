@@ -44,7 +44,7 @@ const wikiPrompt = `
   In the following conversation, I will input some standup comedian names for you.
 `
 
-export default async function getAIGeneratedContent(comedianName: string) {
+async function createGPTClient() {
   const importDynamic = new Function('modulePath', 'return import(modulePath)')
   const { ChatGPTAPI } = await importDynamic('chatgpt')
   // const nodeFetch = await importDynamic('node-fetch')
@@ -69,6 +69,11 @@ export default async function getAIGeneratedContent(comedianName: string) {
       return nodeFetch(url, mergedOptions);
     },
   })
+  return api
+}
+
+export default async function getAIGeneratedContent(comedianName: string) {
+  const api = await createGPTClient()
 
   console.log('Openai started')
 
@@ -127,4 +132,23 @@ export default async function getAIGeneratedContent(comedianName: string) {
     brief: brief.text,
     tags: realTagArray
   }
+}
+
+export async function isAShowStarredbyComedian({
+  showName,
+  comedianName
+}: {
+  showName: string,
+  comedianName: string
+}) {
+  const api = await createGPTClient()
+
+  const conversation = await api.sendMessage(`Is the show "${showName}"  staring by standup comedian ${comedianName}? Yes or No?`, {
+    timeoutMs: TIMEOUT,
+    // onProgress: (partialResponse: any) => console.log(partialResponse.text)
+  })
+
+  const answer = conversation.text
+
+  return answer.includes('Yes') ? true : false
 }
