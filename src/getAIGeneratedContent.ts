@@ -51,10 +51,8 @@ async function createGPTClient() {
   const api = new ChatGPTAPI({
     apiKey: process.env.OPENAI_API_KEY || '',
     completionParams: {
-      // TODO: use gpt-4
-      // model: 'gpt-4',
-      // temperature: 0.5,
-      // top_p: 0.8
+      model: 'gpt-4',
+      temperature: 0.5,
     },
     fetch: (url: string, options = {}) => {
       const defaultOptions = {
@@ -149,6 +147,8 @@ export async function isAShowStarredbyComedian({
   })
 
   const answer = conversation.text
+
+  console.log(answer.includes('Yes'), showName, comedianName)
 
   return answer.includes('Yes') ? true : false
 }

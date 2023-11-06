@@ -102,7 +102,9 @@ async function getSpecials(imdbURL: string) {
       return specialElementsArray
         .filter(
           (e) =>
-            e?.innerHTML.includes('Special') || e?.innerHTML.includes('Video') || e?.querySelectorAll('.sc-9814c2de-0 > span')?.length === 1,
+            e?.innerHTML.includes('Special') 
+            || e?.innerHTML.includes('Video') 
+            // || e?.querySelectorAll('.sc-9814c2de-0 > span')?.length === 1,
         )
         .map((e) => e?.querySelector('.ipc-metadata-list-summary-item__t'))
         .map((e) => {
@@ -115,19 +117,17 @@ async function getSpecials(imdbURL: string) {
   });
 
   if (allSpecials?.length) {
-    allSpecials = await Promise.all(allSpecials?.map(async (s) => {
+    for (const special of allSpecials) {
       let isStarred = true
-      if (!s.name.includes(comedianName)) {
+      if (!special.name.includes(comedianName)) {
+        console.log('current', special.name)
         isStarred = await isAShowStarredbyComedian({
-          showName: s.name,
+          showName: special.name,
           comedianName: comedianName
         })
       }
-      return {
-        isStarred,
-        ...s
-      }
-    }))    
+      special.isStarred = isStarred
+    }
 
     allSpecials = allSpecials.filter((s) => {
       return s.isStarred
@@ -295,8 +295,8 @@ export default async function main(props: Props) {
       const comedianID = updatedComedian?._id
 
       if (needCrawlSpecialInfo === TaskStatus.notStarted && comedianID && infos.specials.length > 0) {
-        for (const special of infos.specials) {
-          await Special.updateOne({
+        await Promise.all(infos.specials.map(special => {
+          return Special.updateOne({
             comedian_id: comedianID,
             name: special.specialName,
             bilibiliInfo: { $ne: null }
@@ -306,9 +306,11 @@ export default async function main(props: Props) {
           },
           { upsert: true }
           )
-        }
+        }))
       }      
     }
+
+    console.log('update to db done', info?.name, eventSource)
   
     if (eventSource === 'solo') {
       await MongoClient.close()
