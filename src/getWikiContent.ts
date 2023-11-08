@@ -1,4 +1,5 @@
 import { browser } from './initBrowser';
+import logger from './logger'
 
 export async function getWikiContent(
   comedianName: string,
@@ -8,17 +9,12 @@ export async function getWikiContent(
 
   try {
 
+    await wikiPage.setViewport({ width: 1920, height: 1080 });
+
     await wikiPage.goto('https://en.wikipedia.org/wiki/Main_Page', {
       timeout: 60 * 1000,
     });
-
-    await wikiPage.waitForSelector('.search-toggle')
-
-    await wikiPage.evaluate(() => {
-      const button = document.querySelector('.search-toggle');
-      button && (button as HTMLAnchorElement).click();
-    });
-
+   
     // await wikiPage.click('.search-toggle')
 
     await wikiPage.waitForSelector('[name="search"]')
@@ -53,7 +49,7 @@ export async function getWikiContent(
       wikiUrl
     }
   } catch (error) {
-    console.log(error, 'wikiPage error')
+    logger.log('error', 'wikiPage error', comedianName, error)
     await wikiPage.close()
     return {}
   }

@@ -10,4 +10,15 @@ const client = new MongoClient(uri, {});
 
 client.connect()
 
-export default client
+let isConnected = false
+
+client.on('connect', () => {
+  isConnected = true
+})
+
+export const dbClient = client
+export const initDB = async () => {
+  if (!isConnected) {
+    await client.connect()
+  }
+}

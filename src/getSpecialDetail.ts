@@ -1,3 +1,4 @@
+import logger from './logger'
 import { browser } from './initBrowser';
 import { getTheHighestResolutionImg } from './utils';
 
@@ -96,7 +97,7 @@ export async function getSpecialDetail(specialUrl: string, comedianName: string,
       presentTime
     };
   } catch (e) {
-    console.log(e, 'specialUrl', specialUrl);
+    logger.log('error', 'specialUrl', specialUrl, e);
     return {};
   }
 }

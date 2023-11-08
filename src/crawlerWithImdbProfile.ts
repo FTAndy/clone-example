@@ -4,11 +4,12 @@ import 'dotenv/config'
 import { getRandom, exists } from './utils';
 import { initBrowser, browser } from './initBrowser';
 import { getBilibiliVideoInfo } from './getBilibiliVideoInfo';
-import MongoClient from './mongo'
+import {dbClient, initDB} from './mongo'
 import { ObjectId } from 'mongodb'
 import { getTheHighestResolutionImg } from './utils';
 import { omit } from 'lodash'
 import { Special } from './types'
+import logger from './logger'
 import { maxLimitedAsync } from './maxLimitedAsync'
 import { getWikiContent } from './getWikiContent';
 import { getSpecialDetail } from './getSpecialDetail';
@@ -72,15 +73,14 @@ async function getSpecials(imdbURL: string) {
     getTheHighestResolutionImg,
   );
 
-  // TODO: get higher resolution
-  const avatarImgURL = await profilePage.evaluate(async () => {
-    const element = document.querySelector('.photos-image .ipc-image');
-    const imgURLs = (element as any)?.srcset.split(', ');
-    const highResolutionUrl = (window as any)._getTheHighestResolutionImg(
-      imgURLs,
-    );
-    return highResolutionUrl;
-  });
+  // const avatarImgURL = await profilePage.evaluate(async () => {
+  //   const element = document.querySelector('.photos-image .ipc-image');
+  //   const imgURLs = (element as any)?.srcset.split(', ');
+  //   const highResolutionUrl = (window as any)._getTheHighestResolutionImg(
+  //     imgURLs,
+  //   );
+  //   return highResolutionUrl;
+  // });
 
   const hasSeeMoreButton = await profilePage.evaluate(() => {
     const seeMoreButton = document.querySelector('.ipc-see-more__text');
@@ -123,11 +123,10 @@ async function getSpecials(imdbURL: string) {
   return {
     allSpecials: allSpecials || [],
     comedianName,
-    avatarImgURL,
+    // avatarImgURL,
   };
 }
 
-// TODO: get cover image from netflix: https://www.netflix.com/sg/title/81625055
 async function startCrawlWithProfile(props: Props) {
   const { 
     imdbURL,
@@ -226,7 +225,7 @@ async function getOneSpecialInfo({
       specialDetail,
     };
   } catch (error) {
-    console.log('error getOneSpecialInfo', error);
+    logger.log('error getOneSpecialInfo', error);
     return {
       bilibiliEmbedUrl: '',
       specialDetail: '',
@@ -245,11 +244,11 @@ export default async function main(props: Props) {
   
     await initBrowser();
   
-    const Database = MongoClient.db("standup-wiki");
+    const Database = dbClient.db("standup-wiki");
     const Comedian = Database.collection("comedian");
     const Special = Database.collection('special')
   
-    await MongoClient.connect()
+    await initDB()
   
     console.log('start to crawler profile', imdbURL)
   
@@ -305,7 +304,7 @@ export default async function main(props: Props) {
     console.log('update to db done', info?.name, eventSource)
   
     if (eventSource === 'solo') {
-      await MongoClient.close()
+      await dbClient.close()
     }
 
   
@@ -317,7 +316,7 @@ export default async function main(props: Props) {
   
     return true    
   } catch (error) {
-    console.log(error, 'error')
+    logger.log('error', props.imdbURL, error)
     return false
   }
 }

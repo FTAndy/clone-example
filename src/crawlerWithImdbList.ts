@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import { initBrowser, browser } from './initBrowser';
-import MongoClient from './mongo'
+import {dbClient, initDB} from './mongo'
 import { CarwlerTask } from './types'
 import crawlerWithImdbProfile from './crawlerWithImdbProfile'
 import { TaskStatus } from './types/index'
@@ -59,10 +59,10 @@ async function start(){
   })
   // .splice(0, 10)
 
-  const Database = MongoClient.db("standup-wiki");
+  const Database = dbClient.db("standup-wiki");
   const CrawlerTask = Database.collection("crawlerTask");
 
-  await MongoClient.connect()
+  await initDB()
 
   for (const comedian of comedianList) {
     const existComedian = await CrawlerTask.findOne<CarwlerTask>({
@@ -133,7 +133,7 @@ async function start(){
       // record message
     }
   }
-  await MongoClient.close()
+  await dbClient.close()
   console.log('list done')
 }
 

@@ -64,6 +64,7 @@
     "node-fetch": "^2.7.0",
     "proxy-agent": "^6.3.1",
     "puppeteer": "^21.3.4",
-    "srt-to-ass": "^0.1.10"
+    "srt-to-ass": "^0.1.10",
+    "winston": "^3.11.0"
   }
 }

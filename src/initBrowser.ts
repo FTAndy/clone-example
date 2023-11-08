@@ -10,6 +10,7 @@ export async function initBrowser() {
       product: 'chrome',
       headless: false,
       timeout: 60 * 1000,
+      args: ['--start-maximized']
       // devtools: true
     });
   }

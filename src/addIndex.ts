@@ -11,17 +11,6 @@ async function reset() {
 
   const cursor = CrawlerTask.find<CarwlerTask>({})
 
-  for await (const task of cursor) {
-    await CrawlerTask.updateOne({
-      _id: task._id
-    }, {
-      $set: {
-        specialStatus: 0,
-        AIContentStatus: 0,
-        status: 0
-      }
-    })
-  }
   await dbClient.close()
   console.log('done')
 }

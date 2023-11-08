@@ -1,10 +1,12 @@
 import 'dotenv/config'
-import MongoClient from './mongo'
+import {dbClient, initDB} from './mongo'
 
 
 async function main() {
-  const Database = MongoClient.db("standup-wiki");
+  const Database = dbClient.db("standup-wiki");
   const Special = Database.collection("special");
+
+  await initDB()
 
   await Special.updateMany(
     {}, // Filter (empty for all documents)
@@ -21,7 +23,7 @@ async function main() {
       }
     }]
   );
-  await MongoClient.close()
+  await dbClient.close()
 }
 
 main()
