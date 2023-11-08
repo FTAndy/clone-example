@@ -22,13 +22,6 @@ const blobServiceClient = new BlobServiceClient(
 const containerName = 'subtitle2';
 
 
-declare global {
-  interface Window {
-    __INITIAL_STATE__: {
-      cidMap: any;
-    };
-  }
-}
 
 export async function getBilibiliVideoInfo(
   specialName: string,

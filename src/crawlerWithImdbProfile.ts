@@ -10,8 +10,9 @@ import { getTheHighestResolutionImg } from './utils';
 import { omit } from 'lodash'
 import { Special } from './types'
 import { maxLimitedAsync } from './maxLimitedAsync'
+import { getWikiContent } from './getWikiContent';
 import { getSpecialDetail } from './getSpecialDetail';
-import getAIGeneratedContent, { isAShowStarredbyComedian } from './getAIGeneratedContent'
+import {AIGenerator} from './getAIGeneratedContent'
 import { TaskStatus } from './types'
 import { info } from 'console';
 // list: https://www.imdb.com/list/ls003453197/
@@ -116,24 +117,6 @@ async function getSpecials(imdbURL: string) {
     }
   });
 
-  if (allSpecials?.length) {
-    for (const special of allSpecials) {
-      let isStarred = true
-      if (!special.name.includes(comedianName)) {
-        console.log('current', special.name)
-        isStarred = await isAShowStarredbyComedian({
-          showName: special.name,
-          comedianName: comedianName
-        })
-      }
-      special.isStarred = isStarred
-    }
-
-    allSpecials = allSpecials.filter((s) => {
-      return s.isStarred
-    })
-  }
-
 
   await profilePage.close()
 
@@ -152,10 +135,11 @@ async function startCrawlWithProfile(props: Props) {
     needGenerateAIContent
   } = props;
 
-  const { allSpecials, comedianName, avatarImgURL } = await getSpecials(imdbURL);
+  const { allSpecials, comedianName } = await getSpecials(imdbURL);
 
   let getSpecialsTasks: Promise<Array<any>> = Promise.resolve([])
   let getAIGeneratedContentTask = Promise.resolve({})
+  let getWikiContentTask = Promise.resolve({})
 
   if (allSpecials?.length && needCrawlSpecialInfo === TaskStatus.notStarted) {
     const specialsTasks = allSpecials
@@ -184,31 +168,39 @@ async function startCrawlWithProfile(props: Props) {
       max: 5,
       tasks: specialsTasks
     })
+
+    getWikiContentTask = getWikiContent(comedianName)
   }
 
   if (needGenerateAIContent === TaskStatus.notStarted) {
-    getAIGeneratedContentTask = getAIGeneratedContent(comedianName)
+    getAIGeneratedContentTask = AIGenerator.getAllContent(comedianName)
   }
 
   let [
     specials, 
-    AIGeneratedContent
+    AIGeneratedContent,
+    wikiContent
   ] = await Promise.all([
     getSpecialsTasks,
-    getAIGeneratedContentTask
+    getAIGeneratedContentTask,
+    getWikiContentTask
   ]);
 
   if (specials.length > 0) {
-    specials = specials.filter(s => {
-      return s.bilibiliInfo
+    specials = specials
+    .filter(s => {
+      return s?.bilibiliInfo
+    })
+    .filter(s => {
+      return s?.specialDetail.isStarred
     })
   }
 
-  const latestSpecialImg = (specials as any)?.[0]?.specialDetail?.coverImgURL
+  // const latestSpecialImg = (specials as any)?.[0]?.specialDetail?.coverImgURL
 
   return {
     name: comedianName,
-    avatarImgURL: latestSpecialImg ? latestSpecialImg : avatarImgURL,
+    ...wikiContent,
     specials,
     AIGeneratedContent,
     IMDBURL: imdbURL
@@ -227,7 +219,7 @@ async function getOneSpecialInfo({
   try {
     const [bilibiliInfo, specialDetail] = await Promise.all([
       getBilibiliVideoInfo(specialName, comedianName),
-      getSpecialDetail(specialUrl),
+      getSpecialDetail(specialUrl, comedianName, specialName),
     ]);
     return {
       bilibiliInfo,

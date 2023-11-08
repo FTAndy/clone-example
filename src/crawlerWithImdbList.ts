@@ -7,10 +7,6 @@ import { TaskStatus } from './types/index'
 
 const START_URL = 'https://www.imdb.com/list/ls003453197/'
 
-
-
-
-
 // TODO: specific list to crawl
 const FILTER_NAME = [
   `Patrice O'Neal`,
@@ -61,7 +57,7 @@ async function start(){
   .filter(s => {
     return !FILTER_NAME.includes(s.name)
   })
-  .splice(0, 10)
+  // .splice(0, 10)
 
   const Database = MongoClient.db("standup-wiki");
   const CrawlerTask = Database.collection("crawlerTask");
@@ -138,6 +134,7 @@ async function start(){
     }
   }
   await MongoClient.close()
+  console.log('list done')
 }
 
 start()

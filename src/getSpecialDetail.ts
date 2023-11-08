@@ -1,7 +1,7 @@
 import { browser } from './initBrowser';
 import { getTheHighestResolutionImg } from './utils';
 
-export async function getSpecialDetail(specialUrl: string) {
+export async function getSpecialDetail(specialUrl: string, comedianName: string, specialName: string) {
   try {
     const specialPage = await browser.newPage();
 
@@ -66,16 +66,32 @@ export async function getSpecialDetail(specialUrl: string) {
       )?.innerHTML;
     });
 
+    const isStarred = await specialPage.evaluate((_comedianName) => {
+      let elements = document.querySelectorAll('.sc-dffc6c81-3 .ipc-metadata-list__item')
+      if (elements) {
+        const eleArray = Array.from(elements)
+        const starredArea = eleArray.find(s => s.innerHTML.includes('Stars') || s.innerHTML.includes('Star'))
+        if (starredArea) {
+          return starredArea.innerHTML.includes(_comedianName)
+        }
+      }
+
+      return false
+    }, comedianName)
+
+    console.log(isStarred, comedianName, specialName)
+
     await specialPage.close()
 
     // console.log(datetime, netflixURL, runtimeDuration, tags, rating, 'special info')
 
     return {
+      isStarred,
       datetime,
       netflixURL,
       runtimeDuration,
       tags,
-      rating,
+      rating: rating ? parseFloat(rating) : 0,
       coverImgURL,
       presentTime
     };

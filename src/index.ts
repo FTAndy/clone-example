@@ -6,5 +6,5 @@ import crawlerWithImdbProfile from './crawlerWithImdbProfile';
 crawlerWithImdbProfile({
   imdbURL: 'https://www.imdb.com/name/nm0127373',
   needCrawlSpecialInfo: 0,
-  needGenerateAIContent: 1
+  needGenerateAIContent: 0
 });

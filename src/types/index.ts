@@ -21,3 +21,11 @@ export type Special = {
   name: string,
   isStarred?: boolean
 }
+
+declare global {
+  interface Window {
+    __INITIAL_STATE__: {
+      cidMap: any;
+    };
+  }
+}
