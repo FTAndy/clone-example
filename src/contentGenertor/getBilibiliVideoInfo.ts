@@ -1,12 +1,12 @@
-import { browser } from './initBrowser';
-import bilibiliCookie from './bilibiliCookie.json';
-import { generateSrtSubtitle } from './generateSrtSubtitle';
+import { browser } from '../utils/initBrowser';
+import bilibiliCookie from '../bilibiliCookie.json';
+import { generateSrtSubtitle } from '../utils/srtSubtitle';
 import { BlobServiceClient, StorageSharedKeyCredential } from '@azure/storage-blob'
 import fs from 'fs/promises';
 import srtToAss from 'srt-to-ass';
 import path from 'path';
-import logger from './logger'
-import { getRandom, sleep, exists, trimSpecial, retryRace } from './utils';
+import logger from '../utils/logger'
+import { getRandom, sleep, exists, trimSpecial, retryRace } from '../utils/utils';
 
 const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
 const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;

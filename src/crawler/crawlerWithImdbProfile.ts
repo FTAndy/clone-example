@@ -1,20 +1,20 @@
 import fs from 'fs/promises';
 import path from 'path';
 import 'dotenv/config'
-import { getRandom, exists } from './utils';
-import { initBrowser, browser } from './initBrowser';
-import { getBilibiliVideoInfo } from './getBilibiliVideoInfo';
-import {dbClient, initDB} from './mongo'
+import { getRandom, exists } from '../utils/utils';
+import { initBrowser, browser } from '../utils/initBrowser';
+import { getBilibiliVideoInfo } from '../contentGenertor/getBilibiliVideoInfo';
+import {dbClient, initDB} from '../utils/mongo'
 import { ObjectId } from 'mongodb'
-import { getTheHighestResolutionImg } from './utils';
+import { getTheHighestResolutionImg } from '../utils/utils';
 import { omit } from 'lodash'
-import { Special } from './types'
-import logger from './logger'
-import { maxLimitedAsync } from './maxLimitedAsync'
-import { getWikiContent } from './getWikiContent';
-import { getSpecialDetail } from './getSpecialDetail';
-import {AIGenerator} from './getAIGeneratedContent'
-import { TaskStatus } from './types'
+import { Special } from '../types'
+import logger from '../utils/logger'
+import { maxLimitedAsync } from '../utils/maxLimitedAsync'
+import { getWikiContent } from '../contentGenertor/getWikiContent';
+import { getSpecialDetail } from '../contentGenertor/getSpecialDetail';
+import {AIGenerator} from '../contentGenertor/getAIGeneratedContent'
+import { TaskStatus } from '../types'
 import { info } from 'console';
 // list: https://www.imdb.com/list/ls003453197/
 

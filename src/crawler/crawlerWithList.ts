@@ -1,11 +1,9 @@
 import 'dotenv/config'
-import { initBrowser, browser } from './initBrowser';
-import {dbClient, initDB} from './mongo'
-import { CarwlerTask } from './types'
+import { initBrowser, browser } from '../utils/initBrowser';
+import {dbClient, initDB} from '../utils/mongo'
+import { CarwlerTask } from '../types'
 import crawlerWithImdbProfile from './crawlerWithImdbProfile'
-import { TaskStatus } from './types/index'
-
-const START_URL = 'https://www.imdb.com/list/ls003453197/'
+import { TaskStatus } from '../types/index'
 
 // TODO: specific list to crawl
 const FILTER_NAME = [
@@ -31,33 +29,78 @@ const FILTER_NAME = [
   `Russell Brand`
 ]
 
-async function start(){
+export default async function start(list: Array<string>): Promise<void>;
+export default async function start(list: string): Promise<void>;
+export default async function start(list: string | Array<string>){
   await initBrowser();
 
-  const ListPage = await browser.newPage();
+  let comedianList: Array<{
+    name: string
+    profileLink: string
+    imdbID: string
+  }> = []
 
-  await ListPage.goto(START_URL);
+  if (Array.isArray(list)) {
+    const ImdbPage = await browser.newPage();
+    for (const comedianName of list) {
 
-  await ListPage.waitForSelector('.lister-list');
+      await ImdbPage.goto('https://www.imdb.com/');
 
-  let comedianList = await ListPage.evaluate(() => {
-    const element =  document.querySelectorAll('.lister-item-header a')
-    const aElements = Array.from(element)
-    let result = aElements.map((a: any) => {
-      return {
-        name: a.innerText,
-        profileLink: a.href,
-        imdbID: /https:\/\/www.imdb.com\/name\/(?:(.+))\?.+/.exec(a.href)?.[1]
+      await ImdbPage.waitForSelector('#suggestion-search')
+
+      await ImdbPage.type('#suggestion-search', comedianName)
+
+      await ImdbPage.click('#suggestion-search-button')
+
+      await ImdbPage.waitForSelector('.ipc-metadata-list-summary-item__t')
+
+      await ImdbPage.click('.ipc-metadata-list-summary-item__t')
+
+      await ImdbPage.waitForSelector('.ipc-page-content-container')
+
+      const comedianInfo = await ImdbPage.evaluate(() => {
+        return {
+          profileLink: location.href,
+          imdbID: (/https:\/\/www.imdb.com\/name\/(?:(.+))\?.+/.exec(location.href)?.[1] as string)
+        }
+      })
+      comedianList.push({
+        name: comedianName,
+        ...comedianInfo
+      })
+      await ImdbPage.close()
+    }
+  } else if (typeof list === 'string') {
+    const ListPage = await browser.newPage();
+
+    await ListPage.goto(list);
+
+    await ListPage.waitForSelector('.lister-list');
+
+    comedianList = await ListPage.evaluate(() => {
+      const element =  document.querySelectorAll('.lister-item-header a')
+      if (element) {
+        const aElements = Array.from(element)
+        let result = aElements.map((a: any) => {
+          return {
+            name: a.innerText,
+            profileLink: a.href,
+            imdbID: (/https:\/\/www.imdb.com\/name\/(?:(.+))\?.+/.exec(a.href)?.[1] as string)
+          }
+        })
+        return result || []
+      } else {
+        return []
       }
     })
-    return result || []
-  })
 
-  comedianList = comedianList
-  .filter(s => {
-    return !FILTER_NAME.includes(s.name)
-  })
-  // .splice(0, 10)
+    comedianList = comedianList
+    .filter(s => {
+      return !FILTER_NAME.includes(s.name)
+    })
+  }
+
+  console.log(comedianList, 'comedianList')
 
   const Database = dbClient.db("standup-wiki");
   const CrawlerTask = Database.collection("crawlerTask");
@@ -136,5 +179,3 @@ async function start(){
   await dbClient.close()
   console.log('list done')
 }
-
-start()

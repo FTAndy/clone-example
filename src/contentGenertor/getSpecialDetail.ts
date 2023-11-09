@@ -1,6 +1,6 @@
-import logger from './logger'
-import { browser } from './initBrowser';
-import { getTheHighestResolutionImg } from './utils';
+import logger from '../utils/logger'
+import { browser } from '../utils/initBrowser';
+import { getTheHighestResolutionImg } from '../utils/utils';
 
 export async function getSpecialDetail(specialUrl: string, comedianName: string, specialName: string) {
   try {

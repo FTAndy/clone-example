@@ -1,5 +1,5 @@
-import { browser } from './initBrowser';
-import logger from './logger'
+import { browser } from '../utils/initBrowser';
+import logger from '../utils/logger'
 
 export async function getWikiContent(
   comedianName: string,

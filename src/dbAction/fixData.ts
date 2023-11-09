@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import {dbClient, initDB} from './mongo'
+import {dbClient, initDB} from '../utils/mongo'
 
 
 async function main() {

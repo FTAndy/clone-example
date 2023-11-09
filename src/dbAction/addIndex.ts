@@ -1,7 +1,7 @@
 import 'dotenv/config'
-import { CarwlerTask } from './types'
-import { initBrowser, browser } from './initBrowser';
-import {dbClient, initDB} from './mongo'
+import { CarwlerTask } from '../types'
+import { initBrowser, browser } from '../utils/initBrowser';
+import {dbClient, initDB} from '../utils/mongo'
 
 async function reset() {
   const Database = dbClient.db("standup-wiki");
