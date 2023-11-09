@@ -5,11 +5,15 @@ import {dbClient, initDB} from './mongo'
 
 async function reset() {
   const Database = dbClient.db("standup-wiki");
-  const CrawlerTask = Database.collection("crawlerTask");
+  const Comedian = Database.collection("comedian");
+  const Special = Database.collection('special')
 
   await initDB()
 
-  const cursor = CrawlerTask.find<CarwlerTask>({})
+  await Comedian.createIndex({ name: "text" })
+  await Special.createIndex({ name: 'text'})
+
+  // const cursor = CrawlerTask.find<CarwlerTask>({})
 
   await dbClient.close()
   console.log('done')
