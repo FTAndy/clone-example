@@ -13,8 +13,6 @@ async function reset() {
   await Comedian.createIndex({ name: "text" })
   await Special.createIndex({ name: 'text'})
 
-  console.log('sdsds')
-
   // const cursor = CrawlerTask.find<CarwlerTask>({})
 
   await dbClient.close()
