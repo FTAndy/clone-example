@@ -3,7 +3,7 @@ import path from 'path'
 
 const logsPath = path.resolve(
   __dirname,
-  '..',
+  '../..',
   'logs',
 );
 

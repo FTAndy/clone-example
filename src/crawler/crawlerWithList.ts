@@ -3,6 +3,7 @@ import { initBrowser, browser } from '../utils/initBrowser';
 import {dbClient, initDB} from '../utils/mongo'
 import { CarwlerTask } from '../types'
 import crawlerWithImdbProfile from './crawlerWithImdbProfile'
+import {maxLimitedAsync} from '../utils/maxLimitedAsync'
 import { TaskStatus } from '../types/index'
 
 // TODO: specific list to crawl
@@ -29,47 +30,68 @@ const FILTER_NAME = [
   `Russell Brand`
 ]
 
+type comedianInfo = {
+  name: string
+  profileLink: string
+  imdbID: string
+}
+
 export default async function start(list: Array<string>): Promise<void>;
 export default async function start(list: string): Promise<void>;
 export default async function start(list: string | Array<string>){
   await initBrowser();
 
-  let comedianList: Array<{
-    name: string
-    profileLink: string
-    imdbID: string
-  }> = []
+  let comedianList: Array<comedianInfo> = []
 
   if (Array.isArray(list)) {
-    const ImdbPage = await browser.newPage();
-    for (const comedianName of list) {
+    function createTask(comedianName: string) {
+      return async (): Promise<comedianInfo> => {
+        const ImdbPage = await browser.newPage();
+        await ImdbPage.goto('https://www.imdb.com/', {
+          timeout: 120 * 1000
+        });
 
-      await ImdbPage.goto('https://www.imdb.com/');
+        await ImdbPage.waitForSelector('#suggestion-search')
+        
+        await ImdbPage.type('#suggestion-search', comedianName)
 
-      await ImdbPage.waitForSelector('#suggestion-search')
+        await ImdbPage.evaluate(() => {
+          const button = document.querySelector('#suggestion-search-button');
+          button && (button as HTMLAnchorElement).click();
+        });
 
-      await ImdbPage.type('#suggestion-search', comedianName)
+        // await ImdbPage.click('#suggestion-search-button')
 
-      await ImdbPage.click('#suggestion-search-button')
+        await ImdbPage.waitForSelector('[data-testid="find-results-section-name"]')
 
-      await ImdbPage.waitForSelector('.ipc-metadata-list-summary-item__t')
+        await ImdbPage.evaluate(() => {
+          const button = document.querySelector('[data-testid="find-results-section-name"] .ipc-metadata-list-summary-item__t');
+          button && (button as HTMLAnchorElement).click();
+        });
 
-      await ImdbPage.click('.ipc-metadata-list-summary-item__t')
+        // await ImdbPage.click('.ipc-metadata-list-summary-item__t')
 
-      await ImdbPage.waitForSelector('.ipc-page-content-container')
+        await ImdbPage.waitForSelector('.ipc-page-content-container')
 
-      const comedianInfo = await ImdbPage.evaluate(() => {
+        const comedianInfo = await ImdbPage.evaluate(() => {
+          return {
+            profileLink: location.href,
+            imdbID: (/https:\/\/www.imdb.com\/name\/(?:(.+))\?.+/.exec(location.href)?.[1] as string)
+          }
+        })
+        await ImdbPage.close()
         return {
-          profileLink: location.href,
-          imdbID: (/https:\/\/www.imdb.com\/name\/(?:(.+))\?.+/.exec(location.href)?.[1] as string)
+          name: comedianName,
+          ...comedianInfo
         }
-      })
-      comedianList.push({
-        name: comedianName,
-        ...comedianInfo
-      })
-      await ImdbPage.close()
+      }
     }
+
+    comedianList = await maxLimitedAsync<comedianInfo>({
+      max: 5,
+      tasks: list.map(comedianName => createTask(comedianName))
+    })
+
   } else if (typeof list === 'string') {
     const ListPage = await browser.newPage();
 

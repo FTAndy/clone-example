@@ -23,7 +23,6 @@ const blobServiceClient = new BlobServiceClient(
 const containerName = 'subtitle2';
 
 
-
 export async function getBilibiliVideoInfo(
   specialName: string,
   comedianName: string,
@@ -48,30 +47,20 @@ export async function getBilibiliVideoInfo(
       button && (button as HTMLAnchorElement).click();
     });
 
-    const hasResult = await retryRace({
-      realEvent: () => {
-        return bilibiliPage.waitForSelector('.video-list div a[href]')
-      },
-      retryEvent: () => {
-       return  new Promise((r) => {
-          setTimeout(async () => {
-            try {
-              if (bilibiliPage && !bilibiliPage.isClosed()) {
-                const errorExist = await exists(bilibiliPage, '.search-neterror-container');
-                if (errorExist) {
-                  await bilibiliPage.click('.search-button');
-                }
-              }        
-            } catch (error) {
-              logger.log('error', error)
-            }
-            r('retry')
-          }, 2000)
-        })
+    const hasVideo = await (async () => {
+      try {
+        const has = await bilibiliPage.waitForSelector('.video-list div a[href]', {
+          timeout: 5000,
+        })          
+        return Boolean(has)
+      } catch (error) {
+        return false
       }
-    })
+    })()
 
-    if (hasResult) {
+    console.log('hasVideo', Boolean(hasVideo))
+
+    if (hasVideo) {
       const videoUrl = await bilibiliPage.evaluate(() => {
         const element = document.querySelector('.video-list div a[href]');
         return (element as HTMLAnchorElement)?.href;
@@ -138,15 +127,15 @@ export async function getBilibiliVideoInfo(
             const srtFormat = generateSrtSubtitle(subtitleJSONData);
             const srtFile = path.resolve(
               __dirname,
-              '..',
+              '../../',
               'temp',
-              `${comedianName}-${specialName}-${subtitle.lan}.srt`,
+              trimSpecial(`${comedianName}-${specialName}-${subtitle.lan}.srt`),
             );
             const assFileName = trimSpecial(`${comedianName}-${specialName}-${subtitle.lan}.ass`)
   
             const assFile = path.resolve(
               __dirname,
-              '..',
+              '../../',
               'temp',
               assFileName
             );
@@ -183,12 +172,13 @@ export async function getBilibiliVideoInfo(
       }      
     } else {
       logger.log('info', 'no bilibili result', specialName, comedianName)
+      console.log('info', 'no bilibili result', specialName, comedianName)
       await bilibiliPage.close()
       return {}
     }
-
   } catch (error) {
-    logger.log('error', 'bilibili error', specialName, comedianName, error)
+    logger.log('info', 'bilibili error', specialName, comedianName, error)
+    console.log('info', 'bilibili error', specialName, comedianName, error)
     await bilibiliPage.close()
     return {}
   }

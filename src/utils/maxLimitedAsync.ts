@@ -3,12 +3,12 @@ interface Props {
   tasks: Array<() => Promise<any>>
 }
 
-export async function maxLimitedAsync(props: Props): Promise<any> {
+export async function maxLimitedAsync<Result>(props: Props): Promise<Array<Result>> {
   const {max, tasks} = props
 
   const totalTask = tasks.length
   let count = 0
-  let result: any = []
+  let result: Array<Result> = []
   return new Promise((resolve, reject) => {
     function startTask() {
       if (tasks.length === 0) {

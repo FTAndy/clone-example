@@ -10,8 +10,9 @@ async function reset() {
 
   await initDB()
 
-  await Comedian.createIndex({ name: "text" })
-  await Special.createIndex({ name: 'text'})
+  // await Comedian.createIndex({ name: "text" })
+  await Special.createIndex({ specialName: 'text'})
+  // await Special.createIndex({ comedian_id: 1})
 
   // const cursor = CrawlerTask.find<CarwlerTask>({})
 

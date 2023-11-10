@@ -9,19 +9,20 @@ async function reset() {
 
   await initDB()
 
-  const cursor = CrawlerTask.find<CarwlerTask>({})
 
-  for await (const task of cursor) {
-    await CrawlerTask.updateOne({
-      _id: task._id
-    }, {
-      $set: {
-        specialStatus: 0,
-        AIContentStatus: 0,
-        status: 0
-      }
-    })
-  }
+  await CrawlerTask.updateMany({
+    name: {
+      $in: [
+        'Jeff Dunham'
+      ]
+    }
+  }, {
+    $set: {
+      specialStatus: 0,
+      AIContentStatus: 1,
+      status: 0
+    }
+  })
   await dbClient.close()
   console.log('done')
 }

@@ -12,7 +12,7 @@ export async function getWikiContent(
     await wikiPage.setViewport({ width: 1920, height: 1080 });
 
     await wikiPage.goto('https://en.wikipedia.org/wiki/Main_Page', {
-      timeout: 60 * 1000,
+      timeout: 120 * 1000,
     });
    
     // await wikiPage.click('.search-toggle')
@@ -26,7 +26,7 @@ export async function getWikiContent(
       button && (button as HTMLAnchorElement).click();
     });
 
-    await wikiPage.waitForSelector('.infobox-image')
+    await wikiPage.waitForSelector('#mw-content-text')
 
     const avatarUrl = await wikiPage.evaluate(() => {
       const imgElement = document.querySelector('.infobox-image img')

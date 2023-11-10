@@ -138,7 +138,10 @@ async function startCrawlWithProfile(props: Props) {
 
   let getSpecialsTasks: Promise<Array<any>> = Promise.resolve([])
   let getAIGeneratedContentTask = Promise.resolve({})
-  let getWikiContentTask = Promise.resolve({})
+  let getWikiContentTask: Promise<{
+    avatarUrl?: string,
+    wikiUrl?: string
+  }> = Promise.resolve({})
 
   if (allSpecials?.length && needCrawlSpecialInfo === TaskStatus.notStarted) {
     const specialsTasks = allSpecials
@@ -195,11 +198,14 @@ async function startCrawlWithProfile(props: Props) {
     })
   }
 
-  // const latestSpecialImg = (specials as any)?.[0]?.specialDetail?.coverImgURL
+  const latestSpecialImg = (specials as any)?.[0]?.specialDetail?.coverImgURL
 
   return {
     name: comedianName,
     ...wikiContent,
+    ...(wikiContent?.avatarUrl ? {} : {
+      avatarUrl: latestSpecialImg
+    }),
     specials,
     AIGeneratedContent,
     IMDBURL: imdbURL

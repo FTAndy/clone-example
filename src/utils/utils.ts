@@ -46,7 +46,7 @@ export function retryRace({
 
     for await (const _ of times) {
       const retryOrResult = await Promise.race([realEvent(), retryEvent()])
-      if (retryOrResult === 'retry') {
+      if (retryOrResult === 'retry' || retryOrResult === false) {
         continue
       } else {
         resolve(true)
