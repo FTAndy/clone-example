@@ -108,3 +108,5 @@ build/
 temp/
 
 bilibiliCookie.json
+
+storage/

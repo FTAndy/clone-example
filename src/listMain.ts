@@ -44,8 +44,9 @@ const list = [
   // 'Daniel Sloss',
   // 'Sam Morril'
   // 'Jeff Dunham'
-  'Mike Vecchione',
-  'John Olivers'
+  // 'Mike Vecchione',
+  // 'John Olivers'
+  'Simon Amstell'
 ]
 
 crawlerWithList(list)
