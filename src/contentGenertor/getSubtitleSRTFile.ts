@@ -2,6 +2,7 @@ import 'dotenv/config'
 import 'global-agent/bootstrap';
 import axios from 'axios'
 import fs from 'fs'
+import fsPromise from 'fs/promises'
 import path from 'path'
 import { maxLimitedAsync } from '../utils/maxLimitedAsync'
 const OpenSubtitles = require('opensubtitles-node-sdk');
@@ -23,7 +24,7 @@ async function initOS() {
   })
 }
 
-export default async function getSubtitleSRTFile(specialName: string, comedianName: string, format: string = 'srt') {
+export default async function getSubtitleSRTFile(specialName: string, storePath: string, format: string = 'srt') {
   if (!os) {
     await initOS()
   }
@@ -33,10 +34,6 @@ export default async function getSubtitleSRTFile(specialName: string, comedianNa
   const response = await os.subtitles({
     query: queryName
   })
-
-  console.log(response, 'response', queryName)
-
-  console.log(response?.data[0]?.attributes?.files)
 
   const fileId = response?.data[0]?.attributes?.files[0]?.file_id
 
@@ -53,9 +50,7 @@ export default async function getSubtitleSRTFile(specialName: string, comedianNa
         responseType: 'stream'
       })
       const srtFile = path.resolve(
-        __dirname,
-        '../../',
-        'temp',
+        storePath,
         // trimSpecial(`${comedianName}-${specialName}-${subtitle.lan}.srt`),
         specialName + '.srt'
       );
@@ -67,8 +62,32 @@ export default async function getSubtitleSRTFile(specialName: string, comedianNa
 
 }
 
-async function main () {
-  const specialList = [
+
+export async function getSubtitleSRTFileFromList (list: Array<string>, comedianName: string) {
+  const comedianDir = path.resolve(
+    __dirname,
+    '../../',
+    'temp',
+    // trimSpecial(`${comedianName}-${specialName}-${subtitle.lan}.srt`),
+    comedianName
+  );
+
+  try {
+    await fsPromise.mkdir(comedianDir) 
+  } catch (error) {
+    
+  }
+
+  await maxLimitedAsync({
+    max: 3,
+    tasks: list.map(specialName => {
+      return () => getSubtitleSRTFile(specialName, comedianDir)
+    })
+  })
+}
+
+getSubtitleSRTFileFromList(
+  [
     "Epilogue: The Punchline",
     "Dave Chappelle: What's in a Name?",
     "Dave Chappelle: The Closer",
@@ -81,14 +100,6 @@ async function main () {
     "Dave Chappelle Unforgiven",
     "Dave Chappelle: 8:46",
     "Dave Chappelle: Killin' Them Softly"
-  ]
-
-  await maxLimitedAsync({
-    max: 3,
-    tasks: specialList.map(specialName => {
-      return () => getSubtitleSRTFile(specialName, 'Dave Chapplle')
-    })
-  })
-}
-
-main()
+  ],
+  'Dave Chappelle'
+)

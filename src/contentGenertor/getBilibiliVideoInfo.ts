@@ -118,7 +118,7 @@ export async function getBilibiliVideoInfo(
         });
   
         const { aid, bvid, cid, subtitles } = videoInfo;
-  
+        // TODO: if no subtitles, download from open subtitle
         if (subtitles?.length) {
           for (const subtitle of subtitles) {
             const subtitleJSONData = await fetch(
@@ -154,7 +154,7 @@ export async function getBilibiliVideoInfo(
             // upload file
             await blobClient.uploadFile(assFile);
             
-            subtitle.subtitleASSURL = `https://andycdn-fndbfaewgxbve2ha.z01.azurefd.net/subtitle2/${assFileName}`
+            subtitle.subtitleASSURL = `https://standup-wiki.azureedge.net/${assFileName}`
           }
         }
   
