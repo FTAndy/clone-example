@@ -103,7 +103,7 @@ export default async function start(list: string | Array<string>){
       const element =  document.querySelectorAll('.lister-item-header a')
       if (element) {
         const aElements = Array.from(element)
-        let result = aElements.map((a: any) => {
+        const result = aElements.map((a: any) => {
           return {
             name: a.innerText,
             profileLink: a.href,
@@ -150,7 +150,7 @@ export default async function start(list: string | Array<string>){
 
     console.log('existComedian', existComedian)
 
-    let now = Date.now()
+    const now = Date.now()
 
     const success = await crawlerWithImdbProfile({
       imdbURL: comedian.profileLink,
@@ -161,7 +161,7 @@ export default async function start(list: string | Array<string>){
 
     console.log((Date.now() - now) / 60 / 1000, ' minutes')
 
-    let whereOption = {
+    const whereOption = {
       name: comedian.name,
     }
     if (success) {

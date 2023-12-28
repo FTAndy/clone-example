@@ -24,7 +24,7 @@ async function initOS() {
   })
 }
 
-export default async function getSubtitleSRTFile(specialName: string, storePath: string, format: string = 'srt') {
+export default async function getSubtitleSRTFile(specialName: string, storePath: string, format = 'srt') {
   if (!os) {
     await initOS()
   }

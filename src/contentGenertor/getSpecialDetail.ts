@@ -68,7 +68,7 @@ export async function getSpecialDetail(specialUrl: string, comedianName: string,
     });
 
     const isStarred = await specialPage.evaluate((_comedianName) => {
-      let elements = document.querySelectorAll('.sc-dffc6c81-3 .ipc-metadata-list__item')
+      const elements = document.querySelectorAll('.sc-dffc6c81-3 .ipc-metadata-list__item')
       if (elements) {
         const eleArray = Array.from(elements)
         const starredArea = eleArray.find(s => s.innerHTML.includes('Stars') || s.innerHTML.includes('Star'))

@@ -94,8 +94,8 @@ async function getSpecials(imdbURL: string) {
     await profilePage.waitForTimeout(1000);
   }
 
-  let allSpecials: Array<Special> | undefined = await profilePage.evaluate(() => {
-    let specialElements = document.querySelectorAll(
+  const allSpecials: Array<Special> | undefined = await profilePage.evaluate(() => {
+    const specialElements = document.querySelectorAll(
       '.ipc-metadata-list-summary-item__tc',
     );
     if (specialElements) {
