@@ -1,4 +1,8 @@
-import puppeteer, { Browser } from 'puppeteer';
+import { Browser } from 'puppeteer';
+import puppeteer from 'puppeteer-extra'
+import StealthPlugin from 'puppeteer-extra-plugin-stealth'
+
+puppeteer.use(StealthPlugin())
 
 export let browser: Browser;
 
@@ -8,8 +12,8 @@ export async function initBrowser() {
   } else {
     browser = await puppeteer.launch({
       product: 'chrome',
-      headless: false,
-      timeout: 60 * 1000,
+      headless: true,
+      // timeout: 60 * 1000,
       args: ['--start-maximized']
       // devtools: true
     });

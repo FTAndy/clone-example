@@ -1,8 +1,5 @@
 import 'dotenv/config'
 import nodeFetch from 'node-fetch'
-import { HttpsProxyAgent } from 'https-proxy-agent';
-
-const agent = new HttpsProxyAgent('http://127.0.0.1:7890');
 
 async function fetchWithRetry(url: string, options = {}, retryCount = 3) {
   for (let i = 0; i < retryCount; i++) {

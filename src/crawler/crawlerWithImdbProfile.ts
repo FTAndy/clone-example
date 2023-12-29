@@ -3,7 +3,6 @@ import path from 'path';
 import 'dotenv/config'
 import { getRandom, exists } from '../utils/utils';
 import { initBrowser, browser } from '../utils/initBrowser';
-import { getBilibiliVideoInfo } from '../contentGenertor/getBilibiliVideoInfo';
 import {dbClient, initDB} from '../utils/mongo'
 import { ObjectId } from 'mongodb'
 import { getTheHighestResolutionImg } from '../utils/utils';
@@ -13,15 +12,16 @@ import logger from '../utils/logger'
 import { maxLimitedAsync } from '../utils/maxLimitedAsync'
 import { getWikiContent } from '../contentGenertor/getWikiContent';
 import { getSpecialDetail } from '../contentGenertor/getSpecialDetail';
+import { getTMDBMovieInfo } from '../contentGenertor/getTMDBInfo';
 import {AIGenerator} from '../contentGenertor/getAIGeneratedContent'
 import { TaskStatus } from '../types'
-import { info } from 'console';
 // list: https://www.imdb.com/list/ls003453197/
 
 interface Props {
   imdbURL: string;
   needCrawlSpecialInfo: TaskStatus
   needGenerateAIContent: TaskStatus,
+  needCrawlWikiContent: TaskStatus,
   eventSource?: 'solo' | 'list'
 }
 
@@ -131,7 +131,8 @@ async function startCrawlWithProfile(props: Props) {
   const { 
     imdbURL,
     needCrawlSpecialInfo,
-    needGenerateAIContent
+    needGenerateAIContent,
+    needCrawlWikiContent
   } = props;
 
   const { allSpecials, comedianName } = await getSpecials(imdbURL);
@@ -147,54 +148,54 @@ async function startCrawlWithProfile(props: Props) {
     const specialsTasks = allSpecials
     .map((s) => {
       return () => {
-        return Promise.resolve()
-        .then(() => {
-          return getOneSpecialInfo({
-            specialName: s.name,
-            specialUrl: s.href,
-            comedianName,
-          });
+        return getOneSpecialInfo({
+          specialName: s.name,
+          specialUrl: s.href,
+          comedianName,
         })
-        .then(({bilibiliInfo, specialDetail}) => {
+        .then(({ specialDetail, TMDBInfo}) => {
           return ({
-            bilibiliInfo,
             specialDetail,
+            TMDBInfo,
             specialName: s.name,
           });
         })
       }
     });
 
-    // getSpecialsTasks = Promise.all(specialsTasks)
     getSpecialsTasks = maxLimitedAsync({
-      max: 5,
+      max: 2,
       tasks: specialsTasks
     })
 
-    getWikiContentTask = getWikiContent(comedianName)
   }
 
   if (needGenerateAIContent === TaskStatus.notStarted) {
     getAIGeneratedContentTask = AIGenerator.getAllContent(comedianName)
   }
 
+  if (needCrawlWikiContent === TaskStatus.notStarted) {
+    getWikiContentTask = getWikiContent(comedianName)
+  }
+
   let [
     specials, 
     AIGeneratedContent,
-    wikiContent
+    wikiContent,
   ] = await Promise.all([
     getSpecialsTasks,
     getAIGeneratedContentTask,
-    getWikiContentTask
+    getWikiContentTask,
   ]);
 
   if (specials.length > 0) {
     specials = specials
-    .filter(s => {
-      return s?.bilibiliInfo
-    })
+    // filter out the specials that is starred by the comedian
     .filter(s => {
       return s?.specialDetail.isStarred
+    })
+    .filter(s => {
+      return s?.specialDetail.TMDBInfo
     })
   }
 
@@ -222,19 +223,19 @@ async function getOneSpecialInfo({
   comedianName: string;
 }) {
   try {
-    const [bilibiliInfo, specialDetail] = await Promise.all([
-      getBilibiliVideoInfo(specialName, comedianName),
+    const [specialDetail, TMDBInfo ] = await Promise.all([
       getSpecialDetail(specialUrl, comedianName, specialName),
+      getTMDBMovieInfo(`${comedianName} ${specialName}`)
     ]);
     return {
-      bilibiliInfo,
       specialDetail,
+      TMDBInfo
     };
   } catch (error) {
-    logger.log('error getOneSpecialInfo', error);
+    logger.error('error getOneSpecialInfo', error);
     return {
-      bilibiliEmbedUrl: '',
       specialDetail: '',
+      TMDBInfo: null
     };
   }
 }
@@ -255,14 +256,9 @@ export default async function main(props: Props) {
     const Special = Database.collection('special')
   
     await initDB()
-  
-    console.log('start to crawler profile', imdbURL)
-  
+    
     const infos = await startCrawlWithProfile(props);
   
-
-    console.log('get infos')
-
     if (infos) {
       let dataSet = {}
       if (needGenerateAIContent === TaskStatus.notStarted) {
@@ -284,6 +280,7 @@ export default async function main(props: Props) {
       const updateDoc = {
         $set: dataSet
       };
+      // update newest data to comedian
       await Comedian.updateOne(filter, updateDoc, options)
       const updatedComedian = await Comedian.findOne({
         name: infos?.name
@@ -291,12 +288,13 @@ export default async function main(props: Props) {
 
       const comedianID = updatedComedian?._id
 
+      // update specials info
       if (needCrawlSpecialInfo === TaskStatus.notStarted && comedianID && infos.specials.length > 0) {
         await Promise.all(infos.specials.map(special => {
+          console.log(special, 'special')
           return Special.updateOne({
             comedian_id: comedianID,
             name: special.specialName,
-            bilibiliInfo: { $ne: null }
           }, 
           {
             $set: special
@@ -307,10 +305,11 @@ export default async function main(props: Props) {
       }      
     }
 
-    console.log('update to db done', info?.name, eventSource)
+    console.log('update to db done', infos?.name, eventSource)
   
     if (eventSource === 'solo') {
       await dbClient.close()
+      await browser.close()
     }
 
   

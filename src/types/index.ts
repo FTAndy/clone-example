@@ -10,8 +10,9 @@ export type CarwlerTask = {
   _id: ObjectId,
   name: string,
   type: string,
-  specialStatus: TaskStatus,
+  specialInfoStatus: TaskStatus,
   AIContentStatus: TaskStatus,
+  wikiContentStatus: TaskStatus,
   imdbID: string,
   status: TaskStatus
 }

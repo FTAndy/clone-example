@@ -140,10 +140,12 @@ export default async function start(list: string | Array<string>){
 
     let needGenerateAIContent = TaskStatus.notStarted
     let needCrawlSpecialInfo = TaskStatus.notStarted
+    let needCrawlWikiContent = TaskStatus.notStarted
 
     if (existComedian) {
       needGenerateAIContent = existComedian.AIContentStatus
-      needCrawlSpecialInfo = existComedian.specialStatus
+      needCrawlSpecialInfo = existComedian.specialInfoStatus
+      needCrawlWikiContent = existComedian.wikiContentStatus
     }
 
     console.log('start comedian', comedian.name, comedian.imdbID, comedian.profileLink)
@@ -156,6 +158,7 @@ export default async function start(list: string | Array<string>){
       imdbURL: comedian.profileLink,
       needGenerateAIContent,
       needCrawlSpecialInfo,
+      needCrawlWikiContent,
       eventSource: 'list'
     })
 
@@ -171,9 +174,10 @@ export default async function start(list: string | Array<string>){
       {
         $set: {
           name: comedian.name,
-          specialStatus: 1,
-          type: 'comedian',
+          specialInfoStatus: 1,
           AIContentStatus: 1,
+          wikiContentStatus: 1,
+          type: 'comedian',
           imdbID: comedian.imdbID,
           status: 1
         }
@@ -186,8 +190,9 @@ export default async function start(list: string | Array<string>){
       {
         $set: {
           name: comedian.name,
-          specialStatus: 0,
+          specialInfoStatus: 0,
           AIContentStatus: 0,
+          wikiContentStatus: 0,
           type: 'comedian',
           imdbID: comedian.imdbID,
           status: 99 // fail

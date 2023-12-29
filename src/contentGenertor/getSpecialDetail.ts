@@ -68,7 +68,7 @@ export async function getSpecialDetail(specialUrl: string, comedianName: string,
     });
 
     const isStarred = await specialPage.evaluate((_comedianName) => {
-      const elements = document.querySelectorAll('.sc-dffc6c81-3 .ipc-metadata-list__item')
+      const elements = document.querySelectorAll('[data-testid="title-pc-principal-credit"]')
       if (elements) {
         const eleArray = Array.from(elements)
         const starredArea = eleArray.find(s => s.innerHTML.includes('Stars') || s.innerHTML.includes('Star'))
@@ -80,7 +80,8 @@ export async function getSpecialDetail(specialUrl: string, comedianName: string,
       return false
     }, comedianName)
 
-    console.log(isStarred, comedianName, specialName)
+    // TODO: is comedy using tags
+    console.log(isStarred, comedianName, specialName, 'isStarred')
 
     await specialPage.close()
 
