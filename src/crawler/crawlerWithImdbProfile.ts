@@ -13,6 +13,7 @@ import { maxLimitedAsync } from '../utils/maxLimitedAsync'
 import { getWikiContent } from '../contentGenertor/getWikiContent';
 import { getSpecialDetail } from '../contentGenertor/getSpecialDetail';
 import { getTMDBMovieInfo } from '../contentGenertor/getTMDBInfo';
+import { getBilibiliVideoInfo } from '../contentGenertor/getBilibiliVideoInfo';
 import {AIGenerator} from '../contentGenertor/getAIGeneratedContent'
 import { TaskStatus } from '../types'
 // list: https://www.imdb.com/list/ls003453197/
@@ -153,8 +154,13 @@ async function startCrawlWithProfile(props: Props) {
           specialUrl: s.href,
           comedianName,
         })
-        .then(({ specialDetail, TMDBInfo}) => {
+        .then(({ 
+          specialDetail, 
+          TMDBInfo,
+          // bilibiliInfo
+        }) => {
           return ({
+            // bilibiliInfo
             specialDetail,
             TMDBInfo,
             specialName: s.name,
@@ -194,9 +200,6 @@ async function startCrawlWithProfile(props: Props) {
     .filter(s => {
       return s?.specialDetail.isStarred
     })
-    .filter(s => {
-      return s?.specialDetail.TMDBInfo
-    })
   }
 
   const latestSpecialImg = (specials as any)?.[0]?.specialDetail?.coverImgURL
@@ -204,9 +207,9 @@ async function startCrawlWithProfile(props: Props) {
   return {
     name: comedianName,
     ...wikiContent,
-    ...(wikiContent?.avatarUrl ? {} : {
-      avatarUrl: latestSpecialImg
-    }),
+    ...(needCrawlWikiContent === TaskStatus.notStarted && (wikiContent?.avatarUrl || latestSpecialImg) ? { 
+      avatarUrl: wikiContent?.avatarUrl || latestSpecialImg
+    } : {}),
     specials,
     AIGeneratedContent,
     IMDBURL: imdbURL
@@ -223,9 +226,14 @@ async function getOneSpecialInfo({
   comedianName: string;
 }) {
   try {
-    const [specialDetail, TMDBInfo ] = await Promise.all([
+    const [
+      specialDetail, 
+      TMDBInfo, 
+      // bilibiliInfo 
+    ] = await Promise.all([
       getSpecialDetail(specialUrl, comedianName, specialName),
-      getTMDBMovieInfo(`${comedianName} ${specialName}`)
+      getTMDBMovieInfo(`${comedianName} ${specialName}`),
+      // getBilibiliVideoInfo(specialName, comedianName),
     ]);
     return {
       specialDetail,
@@ -287,6 +295,8 @@ export default async function main(props: Props) {
       })
 
       const comedianID = updatedComedian?._id
+
+      console.log(needCrawlSpecialInfo === TaskStatus.notStarted, comedianID, infos.specials)
 
       // update specials info
       if (needCrawlSpecialInfo === TaskStatus.notStarted && comedianID && infos.specials.length > 0) {

@@ -2,7 +2,7 @@
   "compilerOptions": {
     "resolveJsonModule": true,
     "target": "ESNext",
-    "module": "commonjs",
+    "module": "commonJS",
     "lib": ["es6", "dom", "es2021"],
     "allowJs": true,
     "outDir": "build",
@@ -10,7 +10,8 @@
     "strict": true,
     "esModuleInterop": true,
     "types": ["node", "jest"],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": ["src/**/*"],
   "exclude": ["src/**/*.spec.ts"]

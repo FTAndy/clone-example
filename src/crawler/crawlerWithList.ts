@@ -6,6 +6,8 @@ import crawlerWithImdbProfile from './crawlerWithImdbProfile'
 import {maxLimitedAsync} from '../utils/maxLimitedAsync'
 import { TaskStatus } from '../types/index'
 
+const IMDB_ID_REGEX = new RegExp(/https:\/\/www.imdb.com\/name\/(?:(.+))\//)
+
 // TODO: specific list to crawl
 const FILTER_NAME = [
   `Patrice O'Neal`,
@@ -47,17 +49,8 @@ export default async function start(list: string | Array<string>){
     function createTask(comedianName: string) {
       return async (): Promise<comedianInfo> => {
         const ImdbPage = await browser.newPage();
-        await ImdbPage.goto('https://www.imdb.com/', {
-          timeout: 120 * 1000
-        });
-
-        await ImdbPage.waitForSelector('#suggestion-search')
-        
-        await ImdbPage.type('#suggestion-search', comedianName)
-
-        await ImdbPage.evaluate(() => {
-          const button = document.querySelector('#suggestion-search-button');
-          button && (button as HTMLAnchorElement).click();
+        await ImdbPage.goto(`https://www.imdb.com/find/?q=${comedianName}`, {
+          timeout: 60 * 1000
         });
 
         // await ImdbPage.click('#suggestion-search-button')
@@ -76,9 +69,9 @@ export default async function start(list: string | Array<string>){
         const comedianInfo = await ImdbPage.evaluate(() => {
           return {
             profileLink: location.href,
-            imdbID: (/https:\/\/www.imdb.com\/name\/(?:(.+))\?.+/.exec(location.href)?.[1] as string)
+            imdbID: (/https:\/\/www.imdb.com\/name\/(?:(.+))\//.exec(location.href)?.[1] as string)
           }
-        })
+        },)
         await ImdbPage.close()
         return {
           name: comedianName,
@@ -107,7 +100,7 @@ export default async function start(list: string | Array<string>){
           return {
             name: a.innerText,
             profileLink: a.href,
-            imdbID: (/https:\/\/www.imdb.com\/name\/(?:(.+))\?.+/.exec(a.href)?.[1] as string)
+            imdbID: (/https:\/\/www.imdb.com\/name\/(?:(.+))\//.exec(a.href)?.[1] as string)
           }
         })
         return result || []
@@ -122,7 +115,7 @@ export default async function start(list: string | Array<string>){
     })
   }
 
-  console.log(comedianList, 'comedianList')
+  console.log(comedianList.length, 'comedianList')
 
   const Database = dbClient.db("standup-wiki");
   const CrawlerTask = Database.collection("crawlerTask");
@@ -133,6 +126,8 @@ export default async function start(list: string | Array<string>){
     const existComedian = await CrawlerTask.findOne<CarwlerTask>({
       imdbID: comedian.imdbID
     })
+
+
     if (existComedian && existComedian.status === 1) {
       console.log(existComedian.name, ' skip!!!')
       continue
@@ -150,7 +145,7 @@ export default async function start(list: string | Array<string>){
 
     console.log('start comedian', comedian.name, comedian.imdbID, comedian.profileLink)
 
-    console.log('existComedian', existComedian)
+    console.log('existComedian', existComedian, 'process')
 
     const now = Date.now()
 
