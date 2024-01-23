@@ -47,19 +47,30 @@ export default async function getSubtitleSRTFile(specialName: string, storePath:
       const response = await axios({
         method: 'get',
         url: link,
-        responseType: 'stream'
       })
-      const srtFile = path.resolve(
+      console.log(response.data, 'response.data')
+      const vttFile = path.resolve(
         storePath,
         // trimSpecial(`${comedianName}-${specialName}-${subtitle.lan}.srt`),
-        specialName + '.srt'
+        specialName + '.vtt'
       );
 
-      response.data.pipe(fs.createWriteStream(srtFile));
+      const vttContent = await convertSrtToVtt(response.data)
+
+      await fsPromise.writeFile(vttFile, vttContent, 'utf8')
+
+      // response.data.pipe(fs.createWriteStream(srtFile));
     }
     
   }
 
+}
+
+async function convertSrtToVtt(srtContent: string) {
+  const importDynamic = new Function('modulePath', 'return import(modulePath)')
+  const subsrt = await importDynamic('subsrt-ts')
+  const vtt = subsrt.convert(srtContent, 'vtt')
+  return vtt
 }
 
 
@@ -86,20 +97,21 @@ export async function getSubtitleSRTFileFromList (list: Array<string>, comedianN
   })
 }
 
+
 getSubtitleSRTFileFromList(
   [
-    "Epilogue: The Punchline",
-    "Dave Chappelle: What's in a Name?",
+    // "Epilogue: The Punchline",
+    // "Dave Chappelle: What's in a Name?",
     "Dave Chappelle: The Closer",
-    "Dave Chappelle: The Bird Revelation",
-    "The Age of Spin: Dave Chappelle Live at the Hollywood Palladium",
-    "Dave Chappelle: Sticks & Stones",
-    "Deep in the Heart of Texas",
-    "Dave Chappelle: Equanimity",
-    "Dave Chappelle: For What It's Worth",
-    "Dave Chappelle Unforgiven",
-    "Dave Chappelle: 8:46",
-    "Dave Chappelle: Killin' Them Softly"
+    // "Dave Chappelle: The Bird Revelation",
+    // "The Age of Spin: Dave Chappelle Live at the Hollywood Palladium",
+    // "Dave Chappelle: Sticks & Stones",
+    // "Deep in the Heart of Texas",
+    // "Dave Chappelle: Equanimity",
+    // "Dave Chappelle: For What It's Worth",
+    // "Dave Chappelle Unforgiven",
+    // "Dave Chappelle: 8:46",
+    // "Dave Chappelle: Killin' Them Softly"
   ],
   'Dave Chappelle'
 )

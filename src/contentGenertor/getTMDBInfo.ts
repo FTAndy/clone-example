@@ -32,6 +32,7 @@ async function tryGetTMDBMovieInfo(query: string) {
 
   const item = res.results?.length && res.results[0]
   if (item && item.id) {
+    // TODO: get vtt subtitle and upload to Azure
     return {
       type: 'movie',
       title: item.original_title || query,

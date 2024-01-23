@@ -17,7 +17,8 @@ async function reset() {
 
   const needToGetTasks = await CrawlerTask.find({
     status: 0,
-    specialInfoStatus: 0
+    specialInfoStatus: 0,
+    wikiContentStatus: 0
   }).toArray()
 
   console.log(needToGetTasks, 'needToGetTasks')

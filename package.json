@@ -86,6 +86,7 @@
     "repo-crawler-for-gpt": "^1.0.8",
     "srcset": "^5.0.0",
     "srt-to-ass": "^0.1.10",
+    "subsrt-ts": "^2.1.2",
     "winston": "^3.11.0"
   }
 }

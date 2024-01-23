@@ -16,7 +16,7 @@ async function reset() {
     }
   }, {
     $set: {
-      // specialInfoStatus: 1,
+      specialInfoStatus: 0,
       // AIContentStatus: 1,
       wikiContentStatus: 0,
       status: 0
