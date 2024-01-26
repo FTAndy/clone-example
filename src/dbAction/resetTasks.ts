@@ -12,13 +12,16 @@ async function reset() {
 
   await CrawlerTask.updateMany({
     name: {
+      // $in: [
+      //   'Dave Chappelle'
+      // ],
       $exists: true,  // Checks if the name field exists
     }
   }, {
     $set: {
       specialInfoStatus: 0,
       // AIContentStatus: 1,
-      wikiContentStatus: 0,
+      // wikiContentStatus: 0,
       status: 0
     }
   })

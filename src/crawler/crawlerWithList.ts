@@ -62,8 +62,6 @@ export default async function start(list: string | Array<string>){
           button && (button as HTMLAnchorElement).click();
         });
 
-        // await ImdbPage.click('.ipc-metadata-list-summary-item__t')
-
         await ImdbPage.waitForSelector('.ipc-page-content-container')
 
         const comedianInfo = await ImdbPage.evaluate(() => {

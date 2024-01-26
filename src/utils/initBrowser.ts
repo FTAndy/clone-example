@@ -1,4 +1,4 @@
-import { Browser } from 'puppeteer';
+import type { Browser } from 'puppeteer';
 import puppeteer from 'puppeteer-extra'
 import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 
@@ -10,13 +10,17 @@ export async function initBrowser() {
   if (browser) {
     return browser
   } else {
-    browser = await puppeteer.launch({
-      product: 'chrome',
-      headless: true,
-      // timeout: 60 * 1000,
-      args: ['--start-maximized']
-      // devtools: true
-    });
+    try {
+      browser = await puppeteer.launch({
+        product: 'chrome',
+        headless: true,
+        // timeout: 60 * 1000,
+        args: ['--start-maximized']
+        // devtools: true
+      });      
+    } catch (error) {
+      console.log(error)
+    }
   }
 
 }

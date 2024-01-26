@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import { MovieDb } from 'moviedb-promise';
 import logger from '../utils/logger'
+import { getSubtitleVTTFile } from './getSubtitleFile'
 const retry = require('async-retry');
 
 import { makeProviders, makeStandardFetcher, targets } from '@movie-web/providers';
@@ -33,11 +34,20 @@ async function tryGetTMDBMovieInfo(query: string) {
   const item = res.results?.length && res.results[0]
   if (item && item.id) {
     // TODO: get vtt subtitle and upload to Azure
+    // TODO: try to use https://github.com/Diaoul/subliminal to download subtitle
+    // TODO: https://github.com/Diaoul/subliminal tested, not working
+    // if there is no source in OpenSubtitles and to download multi language
+
+    const title = item.original_title || query
+
+    const vttSubtitle = await getSubtitleVTTFile(title)
+
     return {
       type: 'movie',
       title: item.original_title || query,
       releaseYear: parseInt(item?.release_date?.split('-')[0] || '1') || 2023,
-      tmdbId: String(item.id)
+      tmdbId: String(item.id),
+      vttSubtitle
     } as const
   }
   return null

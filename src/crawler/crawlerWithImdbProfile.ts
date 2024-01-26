@@ -138,6 +138,8 @@ async function startCrawlWithProfile(props: Props) {
 
   const { allSpecials, comedianName } = await getSpecials(imdbURL);
 
+  console.log(allSpecials, comedianName)
+
   let getSpecialsTasks: Promise<Array<any>> = Promise.resolve([])
   let getAIGeneratedContentTask = Promise.resolve({})
   let getWikiContentTask: Promise<{
@@ -176,9 +178,10 @@ async function startCrawlWithProfile(props: Props) {
 
   }
 
-  if (needGenerateAIContent === TaskStatus.notStarted) {
-    getAIGeneratedContentTask = AIGenerator.getAllContent(comedianName)
-  }
+  // if (false) {
+  // // if (needGenerateAIContent === TaskStatus.notStarted) {
+  //   getAIGeneratedContentTask = AIGenerator.getAllContent(comedianName)
+  // }
 
   if (needCrawlWikiContent === TaskStatus.notStarted) {
     getWikiContentTask = getWikiContent(comedianName)
@@ -235,6 +238,7 @@ async function getOneSpecialInfo({
       getTMDBMovieInfo(`${comedianName} ${specialName}`),
       // getBilibiliVideoInfo(specialName, comedianName),
     ]);
+    console.log(TMDBInfo, specialName)
     return {
       specialDetail,
       TMDBInfo

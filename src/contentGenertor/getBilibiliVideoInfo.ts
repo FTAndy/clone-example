@@ -1,24 +1,13 @@
 import { browser } from '../utils/initBrowser';
 import bilibiliCookie from '../bilibiliCookie.json';
 import { generateSrtSubtitle } from '../utils/srtSubtitle';
-import { BlobServiceClient, StorageSharedKeyCredential } from '@azure/storage-blob'
+import { blobServiceClient } from '../utils/azureStorage';
 import fs from 'fs/promises';
 import srtToAss from 'srt-to-ass';
 import path from 'path';
 import logger from '../utils/logger'
 import { getRandom, sleep, exists, trimSpecial, retryRace } from '../utils/utils';
 
-const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
-const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
-if (!accountName) throw Error('Azure Storage accountName not found');
-if (!accountKey) throw Error('Azure Storage accountKey not found');
-
-const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
-
-const blobServiceClient = new BlobServiceClient(
-  `https://${accountName}.blob.core.windows.net`,
-  sharedKeyCredential
-);
 
 const containerName = 'subtitle2';
 
